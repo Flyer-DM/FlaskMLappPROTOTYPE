@@ -9,5 +9,10 @@
 <p>Лучшая точность: {{ best_score }}</p>
 <p>Лучшая итерация: {{ best_iteration }}</p>
 <p>Параметры обучения: {{ params }}</p>
+<p>График обучения</p>
+<img src="{{ url_for('static', filename='images/plot.png') }}" alt="">
+<p>Важность признаков</p>
+<div id="feature-importance"></div>
+<img src="{{ url_for('static', filename='images/features.png') }}" alt="">
 </body>
 </html>

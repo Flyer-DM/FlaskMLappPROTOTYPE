@@ -1,6 +1,8 @@
 import os
+import glob
 import json
 import pandas as pd
+import matplotlib.pyplot as plt
 from catboost import CatBoostRegressor
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
@@ -8,6 +10,7 @@ from datetime import datetime
 
 
 MODELS_PATH = 'ml_models'
+DATASETS_PATH = 'datasets'
 
 
 def train_model(dataset_name: str):
@@ -60,6 +63,40 @@ def model_kwargs(model: CatBoostRegressor) -> dict:
               "best_iteration": model.get_best_iteration(),
               "params": model.get_params()}
     return result
+
+
+def get_learning_plot(model: CatBoostRegressor):
+    learning = model.get_evals_result()
+    learn = learning['learn']['RMSE']
+    validation = learning['validation']['RMSE']
+    plt.style.use('dark_background')
+    plt.plot(range(len(learn)), learn, label='Learning RMSE', color='blue', linewidth=2, marker='o')
+    plt.plot(range(len(validation)), validation, label='Validation RMSE', color='red', linewidth=2, marker='x')
+    plt.title('RMSE на каждой эпохе обучения', fontsize=16)
+    plt.xlabel('Эпоха', fontsize=14)
+    plt.ylabel('RMSE', fontsize=14)
+    plt.legend(loc='upper right', fontsize=12)
+    plt.grid(True)
+    plt.savefig(os.path.join('static', 'images', 'plot.png'))
+    plt.close()
+
+
+def get_importance_plot(profession_num: int, model: CatBoostRegressor):
+    dataset = glob.glob(os.path.join(DATASETS_PATH, f'*_{profession_num}_*'))[0]
+    data = pd.read_csv(dataset, index_col='id')
+    data = data.drop(columns=['salary_from_rub', 'new_salary'], errors='ignore')
+    importances = model.get_feature_importance(type='PredictionValuesChange')
+    feature_importances = pd.Series(importances, index=data.columns).sort_values(ascending=False)
+
+    plt.style.use('dark_background')
+    bars = plt.barh(feature_importances.index[:10], feature_importances.values[:10])
+    plt.bar_label(bars)
+    plt.title('CatBoost Важность признаков')
+    plt.xlabel('Значение важности')
+    plt.ylabel('Признак')
+    plt.grid(False)
+    plt.savefig(os.path.join('static', 'images', 'features.png'), bbox_inches='tight')
+    plt.close()
 
 
 def get_list_of_models() -> list[str]:
