@@ -5,6 +5,9 @@
     <title>Главная страница для моделей</title>
 </head>
 <body>
+{% if new_model is defined %}
+<p>Обучена новая модель!</p>
+{% endif %}
 <p>Список готовых моделей:</p>
 <form action="/model-description" method="post">
     <select name="profession">
@@ -12,7 +15,10 @@
       <option value="{{each}}">{{each}}</option>
     {% endfor %}
     </select>
-    <input type="submit" value ="Описание">
+    <input type="submit" value="Описание">
+</form>
+<form action="/new-model" method="get">
+    <input type="submit" value ="Создать новую модель">
 </form>
 </body>
 </html>

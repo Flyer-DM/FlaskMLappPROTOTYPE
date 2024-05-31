@@ -7,13 +7,13 @@ from catboost import CatBoostRegressor
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from datetime import datetime
-
+from werkzeug.datastructures import FileStorage
 
 MODELS_PATH = 'ml_models'
 DATASETS_PATH = 'datasets'
 
 
-def train_model(dataset_name: str):
+def train_catboost(dataset_name: FileStorage, profession_num: int):
     data = pd.read_csv(dataset_name, index_col='id')
     target = 'new_salary'
 
@@ -46,7 +46,12 @@ def train_model(dataset_name: str):
     )
 
     date_version = datetime.today().strftime('%Y-%m-%d %H-%M-%S')
-    model.save_model(f'2_v{date_version}.cbm', format='cbm')
+    path = f'{MODELS_PATH}/{profession_num}'
+    if os.path.exists(path):
+        model.save_model(f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
+    else:
+        os.mkdir(path)
+        model.save_model(f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
 
 
 def load_model(profession_num: int) -> CatBoostRegressor:
@@ -99,9 +104,14 @@ def get_importance_plot(profession_num: int, model: CatBoostRegressor):
     plt.close()
 
 
+def get_list_of_professions() -> list[str]:
+    with open('datasets/professions_names.json', 'r', encoding='utf-8') as f:
+        return list(json.load(f).keys())
+
+
 def get_list_of_models() -> list[str]:
     with open('datasets/professions_numbers.json', 'r', encoding='utf-8') as f:
-        translate = json.load(f)
+        translate: dict = json.load(f)
     models = sorted(list(map(lambda x: translate[x], os.listdir(MODELS_PATH))))
     return models
 

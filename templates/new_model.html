@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Страница для создания новой модели</title>
+</head>
+<body>
+{% if dropdown_list is defined %}
+<form action="/" method="get">
+    <input type="submit" value="Назад">
+</form>
+<p>Список доступных профессий:</p>
+<form action="new-model" method="post">
+    <select name="profession">
+    {% for each in dropdown_list %}
+      <option value="{{each}}">{{each}}</option>
+    {% endfor %}
+    </select>
+    <select name="model">
+            <option>Catboost</option>
+            <option>RandomTreeRegressor</option>
+    </select>
+    <input type="submit" value="Выбрать">
+</form>
+{% elif profession is defined and model is defined %}
+<form action="new-model" method="get">
+    <input type="submit" value="Назад">
+</form>
+    <p>Выбранные параметры:</p>
+    <p>Профессия:</p>
+    <p>{{ profession }}</p>
+    <p>Модель:</p>
+    <p>{{ model }}</p>
+    <form action="/upload-dataset" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="profession" value="{{ profession }}">
+        <input type="hidden" name="model" value="{{ model }}">
+        <input type="file" name="file" />
+        <input type="submit" value="Загрузить датасет">
+    </form>
+{% endif %}
+</body>
+</html>
