@@ -54,12 +54,9 @@ def train_catboost(dataset_name: FileStorage, profession_num: int):
         model.save_model(f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
 
 
-def load_model(profession_num: int) -> CatBoostRegressor:
-    path = f'{MODELS_PATH}/{profession_num}'
-    models = os.listdir(path)
-    model_name = models[-1]
+def load_model(path: str) -> CatBoostRegressor:
     model = CatBoostRegressor()
-    model.load_model(f'{path}/{model_name}')
+    model.load_model(path)
     return model
 
 
@@ -116,7 +113,21 @@ def get_list_of_models() -> list[str]:
     return models
 
 
+def get_prof_models(number: int) -> list[str]:
+    path = f'{MODELS_PATH}/{number}'
+    models = os.listdir(path)
+    models = list(map(lambda x: f'{path}/{x}', models))
+    models.sort(key=os.path.getctime, reverse=True)
+    return models
+
+
 def get_prof_num(name: str) -> int:
     with open('datasets/professions_names.json', 'r', encoding='utf-8') as f:
         translate = json.load(f)
     return int(translate[name])
+
+
+def get_prof_name(number: int) -> int:
+    with open('datasets/professions_numbers.json', 'r', encoding='utf-8') as f:
+        translate = json.load(f)
+    return translate[str(number)]

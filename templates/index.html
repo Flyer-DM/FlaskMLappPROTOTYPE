@@ -8,20 +8,34 @@
 </head>
 <body class="d-flex flex-column align-items-center">
 {% if new_model is defined %}
-<p class="first_p">Обучена новая модель!</p>
+    <p class="first_p">Обучена новая модель!</p>
 {% endif %}
-<p class="second_p">Список готовых моделей:</p>
-<form action="/model-description" method="post">
-    <select name="profession">
-    {% for each in dropdown_list %}
-      <option value="{{each}}">{{each}}</option>
-    {% endfor %}
-    </select>
-    <input type="submit" value="Описание">
-</form>
+{% if dropdown_list is defined %}
+    <p class="second_p">Список готовых моделей:</p>
+    <form action="/index" method="post">
+        <select name="profession">
+        {% for each in dropdown_list %}
+          <option value="{{each}}">{{each}}</option>
+        {% endfor %}
+        </select>
+        <input type="submit" value="Выбрать">
+    </form>
+{% else %}
+    <form class="first_button" action="/index" method="get">
+        <input type="submit" value="Назад">
+    </form>
+    <p class="second_p">Выберите версию модели для профессии {{ profession }}:</p>
+    <form action="/model-description" method="post">
+        <select name="model_ver">
+        {% for each in prof_models %}
+          <option value="{{each}}">{{each}}</option>
+        {% endfor %}
+        </select>
+        <input type="submit" value="Описание">
+    </form>
+{% endif %}
 <form action="/new-model" method="get">
-    <input type="submit" value ="Создать новую модель">
+    <input type="submit" value="Создать новую модель">
 </form>
-
 </body>
 </html>

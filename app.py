@@ -1,3 +1,4 @@
+import re
 from flask import Flask, render_template, request
 from utilities.model_utils import *
 
@@ -8,26 +9,33 @@ POST = "POST"
 GET = "GET"
 
 
-@app.route('/index', methods=[GET])
-@app.route('/', methods=[GET])
+@app.route('/index', methods=[GET, POST])
+@app.route('/', methods=[GET, POST])
 def main():
     """
     Главная страница программы
     :return: загрузка html страницы c переданными параметрами
     """
-    dropdown_list = get_list_of_models()
-    return render_template('index.html', dropdown_list=dropdown_list)
+    if request.method == GET:
+        dropdown_list = get_list_of_models()
+        return render_template('index.html', dropdown_list=dropdown_list)
+    else:
+        profession = request.form.get('profession')
+        profession_num = get_prof_num(profession)
+        prof_models = get_prof_models(profession_num)
+        return render_template('index.html', profession=profession, prof_models=prof_models)
 
 
 @app.route('/model-description', methods=[POST])
 def model_description():
     """
-    Страница с описанием модели выбранной модели
+    Страница с описанием версии модели выбранной профессии
     :return: загрузка html страницы c переданными параметрами
     """
-    profession = request.form.get('profession')
-    profession_num = get_prof_num(profession)
-    model = load_model(profession_num)
+    model_ver = request.form.get('model_ver')
+    profession_num = int(re.search(r'(?<=/)\d+(?=/)', model_ver).group()[0])
+    profession = get_prof_name(profession_num)
+    model = load_model(model_ver)
     kwargs = model_kwargs(model)
     # График обучения
     get_learning_plot(model)
@@ -53,6 +61,10 @@ def new_model():
 
 @app.route('/upload-dataset', methods=[POST])
 def new_model_train():
+    """
+    Главная страница после сохранения версии модели
+    :return: загрузка html страницы c переданными параметрами
+    """
     dropdown_list = get_list_of_models()
     profession_num = get_prof_num(request.form.get('profession'))
     model_type = request.form.get('model')
