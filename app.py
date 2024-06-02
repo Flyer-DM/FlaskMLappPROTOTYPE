@@ -1,6 +1,7 @@
 import re
 from flask import Flask, render_template, request
 from utilities.model_utils import *
+from utilities.train_model import train_catboost
 
 app = Flask(__name__)
 
@@ -68,9 +69,14 @@ def new_model_train():
     dropdown_list = get_list_of_models()
     profession_num = get_prof_num(request.form.get('profession'))
     model_type = request.form.get('model')
+    epochs = int(request.form.get('epochs'))
+    early_stop = int(request.form.get('early_stop'))
+    train_test = float(request.form.get('train_test').replace(',', '.', 1))
+    learning_rate = float(request.form.get('learning_rate').replace(',', '.', 1))
+    depth = int(request.form.get('depth'))
     file = request.files['file']
     if model_type == 'Catboost':
-        train_catboost(file, profession_num)
+        train_catboost(file, profession_num, epochs, early_stop, train_test, learning_rate, depth)
     return render_template('index.html', dropdown_list=dropdown_list, new_model=True)
 
 
