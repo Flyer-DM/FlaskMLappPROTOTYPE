@@ -1,8 +1,10 @@
 import os
 import glob
 import json
+import base64
 import pandas as pd
 import matplotlib.pyplot as plt
+from io import BytesIO
 from catboost import CatBoostRegressor
 
 MODELS_PATH = 'ml_models'
@@ -35,8 +37,12 @@ def get_learning_plot(model: CatBoostRegressor):
     plt.ylabel('RMSE', fontsize=14)
     plt.legend(loc='upper right', fontsize=12)
     plt.grid(True)
-    plt.savefig(os.path.join('static', 'images', 'plot.png'))
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
     plt.close()
+    buf.seek(0)
+    img_bytes = base64.b64encode(buf.getvalue()).decode('utf-8')
+    return img_bytes
 
 
 def get_importance_plot(profession_num: int, model: CatBoostRegressor):
@@ -53,8 +59,12 @@ def get_importance_plot(profession_num: int, model: CatBoostRegressor):
     plt.xlabel('Значение важности')
     plt.ylabel('Признак')
     plt.grid(False)
-    plt.savefig(os.path.join('static', 'images', 'features.png'), bbox_inches='tight')
+    buf = BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
     plt.close()
+    buf.seek(0)
+    img_bytes = base64.b64encode(buf.getvalue()).decode('utf-8')
+    return img_bytes
 
 
 def get_list_of_professions() -> list[str]:
