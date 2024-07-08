@@ -4,6 +4,7 @@ from utilities.model_utils import *
 from utilities.train_model import train_catboost
 
 app = Flask(__name__)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 
 POST = "POST"
@@ -39,10 +40,11 @@ def model_description():
     model = load_model(model_ver)
     kwargs = model_kwargs(model)
     # График обучения
-    get_learning_plot(model)
+    learning_plot = get_learning_plot(model)
     # График важности признаков
-    get_importance_plot(profession_num, model)
-    return render_template('description.html', profession=profession, **kwargs)
+    importance_plot = get_importance_plot(profession_num, model)
+    return render_template('description.html', profession=profession, lp=learning_plot, ip=importance_plot,
+                           **kwargs)
 
 
 @app.route('/new-model', methods=[GET, POST])
