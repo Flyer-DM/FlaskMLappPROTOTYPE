@@ -1,0 +1,55 @@
+stages:
+  - build
+#  - test
+  - deploy
+
+variables:
+  VIRTUAL_ENV: .venv
+  PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
+
+cache:
+  paths:
+    - .cache/pip/
+    - $VIRTUAL_ENV/
+
+before_script:
+  - |
+    if [[ "$OSTYPE" == "msys" ]]; then
+      python -m venv $VIRTUAL_ENV
+      .venv\Scripts\activate
+    else
+      python3 -m venv $VIRTUAL_ENV
+      source $VIRTUAL_ENV/bin/activate
+    fi
+  - pip install --upgrade pip
+  - pip install -r requirements.txt
+
+build:
+  stage: build
+  script:
+    - echo "Building the application..."
+    - echo "Building the application..."
+    - python3 -m venv $VIRTUAL_ENV
+    - source $VIRTUAL_ENV/bin/activate
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+  only:
+    - main
+
+#test:
+#  stage: test
+#  script:
+#    - pytest
+#  only:
+#    - main
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying the application..."
+#    - Скрипт для запуска приложения
+  environment:
+    name: production
+    url: http://158.160.137.31:5000/
+  only:
+    - main
