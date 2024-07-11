@@ -1,6 +1,6 @@
 stages:
   - build
-#  - test
+  - test
   - deploy
 
 variables:
@@ -27,26 +27,26 @@ before_script:
 build:
   stage: build
   script:
-    - echo "Building the application..."
-    - echo "Building the application..."
-    - python3 -m venv $VIRTUAL_ENV
-    - source $VIRTUAL_ENV/bin/activate
-    - pip install --upgrade pip
-    - pip install -r requirements.txt
+#    - echo "Building the application..."
+#    - python3 -m venv $VIRTUAL_ENV
+#    - source $VIRTUAL_ENV/bin/activate
+#    - pip install --upgrade pip
+#    - pip install -r requirements.txt
+    - echo "build stage"
   only:
     - main
 
-#test:
-#  stage: test
-#  script:
-#    - pytest
-#  only:
-#    - main
+test:
+  stage: test
+  script:
+    - echo "test stage"
+  only:
+    - main
 
 deploy:
   stage: deploy
   script:
-    - echo "Deploying the application..."
+    - echo "deploy stage"
 #    - Скрипт для запуска приложения
   environment:
     name: production
