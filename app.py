@@ -1,10 +1,52 @@
 import re
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from utilities.model_utils import *
 from utilities.train_model import train_catboost
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+app.secret_key = 'your_secret_key'  
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+users = {'admin': generate_password_hash('password')}
+
+class User(UserMixin):
+    def __init__(self, username):
+        self.id = username
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    if user_id in users:
+        return User(user_id)
+    return None
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username in users and check_password_hash(users[username], password):
+            user = User(username)
+            login_user(user)
+            return redirect(url_for('main'))
+        else:
+            flash('Invalid credentials')
+    return render_template('login.html')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 
 POST = "POST"
@@ -13,6 +55,7 @@ GET = "GET"
 
 @app.route('/index', methods=[GET, POST])
 @app.route('/', methods=[GET, POST])
+@login_required
 def main():
     """
     Главная страница программы
@@ -29,6 +72,7 @@ def main():
 
 
 @app.route('/model-description', methods=[POST])
+@login_required
 def model_description():
     """
     Страница с описанием версии модели выбранной профессии
@@ -48,6 +92,7 @@ def model_description():
 
 
 @app.route('/new-model', methods=[GET, POST])
+@login_required
 def new_model():
     """
     Страница выбора профессии и модели
@@ -63,6 +108,7 @@ def new_model():
 
 
 @app.route('/upload-dataset', methods=[POST])
+@login_required
 def new_model_train():
     """
     Главная страница после сохранения версии модели
