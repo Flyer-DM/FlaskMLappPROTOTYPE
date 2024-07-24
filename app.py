@@ -13,6 +13,7 @@ app.secret_key = 'your_secret_key'
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.login_message = 'Пожалуйста, войдите, чтобы получить доступ к этой странице.'
 
 users = {'admin': generate_password_hash('password')}
 
@@ -38,7 +39,7 @@ def login():
             login_user(user)
             return redirect(url_for('main'))
         else:
-            flash('Invalid credentials')
+            flash('Неверный логин/пароль')
     return render_template('login.html')
 
 
