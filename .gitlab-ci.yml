@@ -2,7 +2,6 @@ stages:
   - build
   - test
   - deploy
-  - clear
 
 variables:
   VIRTUAL_ENV: .venv
@@ -54,9 +53,3 @@ deploy:
     url: http://158.160.137.31:5000/
   only:
     - main
-
-clear:
-  stage: clear
-  script:
-    - sudo rm -rf /home/gitlab-runner/builds
-    - sudo rm -rf /home/gitlab-runner/cache
