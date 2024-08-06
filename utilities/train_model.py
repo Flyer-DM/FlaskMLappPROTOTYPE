@@ -38,7 +38,7 @@ def train_catboost(dataset_name: FileStorage, profession_num: int,
         plot=False
     )
 
-    date_version = datetime.today().strftime('%Y-%m-%d %H-%M-%S')
+    date_version = datetime.now().strftime('%Y%m%d%H%M%S')
     path = f'{MODELS_PATH}/{profession_num}'
     if os.path.exists(path):
         model.save_model(f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')

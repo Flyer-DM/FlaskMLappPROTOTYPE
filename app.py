@@ -1,6 +1,6 @@
 import re
 from flask import Flask, render_template, request, redirect, url_for, flash
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from utilities.model_utils import *
 from utilities.train_model import train_catboost
@@ -16,6 +16,7 @@ login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите, чтобы получить доступ к этой странице.'
 
 users = {'admin': generate_password_hash('password')}
+
 
 class User(UserMixin):
     def __init__(self, username):
@@ -124,7 +125,7 @@ def new_model_train():
     learning_rate = float(request.form.get('learning_rate').replace(',', '.', 1))
     depth = int(request.form.get('depth'))
     file = request.files['file']
-    if model_type == 'Catboost':
+    if model_type == 'CatboostRegressor':
         train_catboost(file, profession_num, epochs, early_stop, train_test, learning_rate, depth)
     return render_template('index.html', dropdown_list=dropdown_list, new_model=True)
 
