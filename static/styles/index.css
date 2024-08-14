@@ -77,3 +77,13 @@ img {
 .second_p {
     margin-top: 50px;
 }
+
+.button-1 {
+    width: 450px;
+    text-align: center;
+}
+
+#logout-button {
+    margin-top: 0;
+    background-color: red;
+}

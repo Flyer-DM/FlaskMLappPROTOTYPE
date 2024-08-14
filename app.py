@@ -55,12 +55,22 @@ POST = "POST"
 GET = "GET"
 
 
-@app.route('/index', methods=[GET, POST])
-@app.route('/', methods=[GET, POST])
+@app.route('/index', methods=[GET])
+@app.route('/', methods=[GET])
 @login_required
 def main():
     """
-    Главная страница программы
+    Первая страница после логина
+    :return: загрузка html страницы
+    """
+    return render_template('main.html')
+
+
+@app.route('/main', methods=[GET, POST])
+@login_required
+def models():
+    """
+    Страница со списком моделей
     :return: загрузка html страницы c переданными параметрами
     """
     if request.method == GET:
@@ -128,6 +138,13 @@ def new_model_train():
     if model_type == 'CatboostRegressor':
         train_catboost(file, profession_num, epochs, early_stop, train_test, learning_rate, depth)
     return render_template('index.html', dropdown_list=dropdown_list, new_model=True)
+
+
+@app.route('/loading', methods=[GET])
+@login_required
+def loading_page():
+    """Заглушка на пустые страницы"""
+    return render_template('loading.html')
 
 
 if __name__ == '__main__':
