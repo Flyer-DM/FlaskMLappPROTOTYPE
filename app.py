@@ -152,6 +152,12 @@ def test_new_model():
     """Тестирование новой модели"""
     return render_template('test_new_model.html')
 
+@app.route('/copy_unfinished_model', methods=[GET])
+@login_required
+def copy_unfinished_model():
+    """Копирование модели"""
+    return render_template('copy_unfinished_model.html')
+
 
 
 if __name__ == '__main__':
