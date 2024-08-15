@@ -146,6 +146,13 @@ def loading_page():
     """Заглушка на пустые страницы"""
     return render_template('loading.html')
 
+@app.route('/test_new_model', methods=[GET])
+@login_required
+def test_new_model():
+    """Тестирование новой модели"""
+    return render_template('test_new_model.html')
+
+
 
 if __name__ == '__main__':
     app.run(debug=False)
