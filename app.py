@@ -158,6 +158,12 @@ def copy_unfinished_model():
     """Копирование модели"""
     return render_template('copy_unfinished_model.html')
 
+@app.route('/model_for_use', methods=[GET])
+@login_required
+def model_for_use():
+    """Назначение финализированной модели для использования в калькуляторе"""
+    return render_template('model_for_use.html')
+
 
 
 if __name__ == '__main__':
