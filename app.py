@@ -177,13 +177,14 @@ def archive_work():
     POST:
     1)возвращает списки всех моделей и списки всех слепков по значению типовой позиции.
     2)обновляется страница с информацией об архивации/разархивации выбранных значений."""
+    dropdown_list = get_list_of_professions()
     if request.method == GET:
-        dropdown_list = get_list_of_professions()
         return render_template("archive.html", dropdown_list=dropdown_list)
-    else:
-        profession = request.form.get('profession')
+    elif request.method == POST and (profession := request.form.get('profession')) is not None:
         archive = request.form.get('archive')
         return render_template("archive.html", profession=profession, archive=archive)
+    elif request.method == POST and (selectedValues := request.form.get('selectedValues')) is not None:
+        return render_template("archive.html", dropdown_list=dropdown_list, archived=True)
 
 
 if __name__ == '__main__':
