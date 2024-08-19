@@ -147,5 +147,20 @@ def loading_page():
     return render_template('loading.html')
 
 
+@app.route('/compare-fin-models', methods=[GET, POST])
+@login_required
+def compare_fin_models():
+    """Страница со сравнением финализированных моделей. ТОЛЬКО ИНТЕРФЕЙС.
+    GET возвращает страницу с двумя списками финализированных моделей на выбор для сравнения.
+    POST возвращает таблицу со сравнением метрик моделей."""
+    if request.method == GET:
+        return render_template("compare_fin_models.html")
+    selected_models = request.form.get('selectedValues')
+    selected_models = selected_models.split(',') if selected_models else []
+    if not(2 <= len(selected_models) <= 5):
+        return render_template("compare_fin_models.html")
+    return render_template("compare_fin_models.html", result=True)
+
+
 if __name__ == '__main__':
     app.run(debug=False)
