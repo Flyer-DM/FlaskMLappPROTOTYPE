@@ -169,5 +169,22 @@ def check_queue():
     return render_template("queue.html")
 
 
+@app.route('/archive', methods=[GET, POST])
+@login_required
+def archive_work():
+    """Страница для проведения архивации и разархивации моделей и слепков данных. ТОЛЬКО ИНТЕРФЕЙС.
+    GET возвращает страницу c выбором типовой позиции и выбором операции (архивация или разархивация).
+    POST:
+    1)возвращает списки всех моделей и списки всех слепков по значению типовой позиции.
+    2)обновляется страница с информацией об архивации/разархивации выбранных значений."""
+    if request.method == GET:
+        dropdown_list = get_list_of_professions()
+        return render_template("archive.html", dropdown_list=dropdown_list)
+    else:
+        profession = request.form.get('profession')
+        archive = request.form.get('archive')
+        return render_template("archive.html", profession=profession, archive=archive)
+
+
 if __name__ == '__main__':
     app.run(debug=False)
