@@ -162,5 +162,12 @@ def compare_fin_models():
     return render_template("compare_fin_models.html", result=True)
 
 
+@app.route('/check-queue', methods=[GET])
+@login_required
+def check_queue():
+    """Страница с просмотром очереди на обучение. ТОЛЬКО ИНТЕРФЕЙС."""
+    return render_template("queue.html")
+
+
 if __name__ == '__main__':
     app.run(debug=False)
