@@ -168,5 +168,45 @@ def model_for_use():
     return render_template('model_for_use.html')
 
 
+@app.route('/compare-fin-models', methods=[GET, POST])
+@login_required
+def compare_fin_models():
+    """Страница со сравнением финализированных моделей. ТОЛЬКО ИНТЕРФЕЙС.
+    GET возвращает страницу с двумя списками финализированных моделей на выбор для сравнения.
+    POST возвращает таблицу со сравнением метрик моделей."""
+    if request.method == GET:
+        return render_template("compare_fin_models.html")
+    selected_models = request.form.get('selectedValues')
+    selected_models = selected_models.split(',') if selected_models else []
+    if not(2 <= len(selected_models) <= 5):
+        return render_template("compare_fin_models.html")
+    return render_template("compare_fin_models.html", result=True)
+
+
+@app.route('/check-queue', methods=[GET])
+@login_required
+def check_queue():
+    """Страница с просмотром очереди на обучение. ТОЛЬКО ИНТЕРФЕЙС."""
+    return render_template("queue.html")
+
+
+@app.route('/archive', methods=[GET, POST])
+@login_required
+def archive_work():
+    """Страница для проведения архивации и разархивации моделей и слепков данных. ТОЛЬКО ИНТЕРФЕЙС.
+    GET возвращает страницу c выбором типовой позиции и выбором операции (архивация или разархивация).
+    POST:
+    1)возвращает списки всех моделей и списки всех слепков по значению типовой позиции.
+    2)обновляется страница с информацией об архивации/разархивации выбранных значений."""
+    dropdown_list = get_list_of_professions()
+    if request.method == GET:
+        return render_template("archive.html", dropdown_list=dropdown_list)
+    elif request.method == POST and (profession := request.form.get('profession')) is not None:
+        archive = request.form.get('archive')
+        return render_template("archive.html", profession=profession, archive=archive)
+    elif request.method == POST and (selectedValues := request.form.get('selectedValues')) is not None:
+        return render_template("archive.html", dropdown_list=dropdown_list, archived=True)
+
+
 if __name__ == '__main__':
     app.run(debug=False)

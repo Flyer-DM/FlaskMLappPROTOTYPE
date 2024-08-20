@@ -1,0 +1,119 @@
+body {
+    text-align: center;
+    background-color: #f0f8ff !important;
+    color: #000080 !important;
+    font-family: Arial, sans-serif;
+}
+
+input[type="submit"] {
+    background-color: #000080;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+input[type="submit"]:hover {
+    background-color: #4169e1;
+}
+
+h1 {
+    font-size: 2em;
+    margin: 20px 0;
+}
+
+p {
+    font-size: 1.2em;
+}
+
+#logout-button {
+    margin-top: 0;
+    background-color: red;
+}
+
+/* Выпадающий список */
+.container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 300px;
+    margin: 0 auto;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+ul li {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #ccc;
+}
+
+ul li:last-child {
+    border-bottom: none;
+}
+
+ul li.selected {
+    background-color: #4CAF50;
+    color: white;
+}
+
+p {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #333;
+}
+
+button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+/* Выпадающий список */
+
+/* Таблица с сравнительными метриками */
+table {
+    font-size: 14px;
+    text-align: center;
+    border-collapse:separate;
+    border-spacing:0 5px;
+    background-color: #4CAF50;
+}
+th, td:first-child {
+    color: white;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    border: white solid 1px;
+}
+
+th, td {
+    border: white solid 3px;
+}
+
+td {
+    background-color: #4CAF50;
+    border: white solid 1px;
+}
+
+th:first-child, td:first-child {
+    text-align: left;
+}
+/* Таблица с сравнительными метриками */
