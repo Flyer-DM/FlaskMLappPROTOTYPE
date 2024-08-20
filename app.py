@@ -146,11 +146,13 @@ def loading_page():
     """Заглушка на пустые страницы"""
     return render_template('loading.html')
 
+
 @app.route('/test_new_model', methods=[GET])
 @login_required
 def test_new_model():
     """Тестирование новой модели"""
     return render_template('test_new_model.html')
+
 
 @app.route('/copy_unfinished_model', methods=[GET])
 @login_required
@@ -158,12 +160,12 @@ def copy_unfinished_model():
     """Копирование модели"""
     return render_template('copy_unfinished_model.html')
 
+
 @app.route('/model_for_use', methods=[GET])
 @login_required
 def model_for_use():
     """Назначение финализированной модели для использования в калькуляторе"""
     return render_template('model_for_use.html')
-
 
 
 if __name__ == '__main__':
