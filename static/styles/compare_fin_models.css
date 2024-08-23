@@ -1,35 +1,6 @@
-body {
-    text-align: center;
-    background-color: #f0f8ff !important;
-    color: #000080 !important;
-    font-family: Arial, sans-serif;
-}
-
-input[type="submit"] {
-    background-color: #000080;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 5px;
-}
-
-input[type="submit"]:hover {
-    background-color: #4169e1;
-}
-
 h1 {
     font-size: 2em;
     margin: 20px 0;
-}
-
-p {
-    font-size: 1.2em;
-}
-
-#logout-button {
-    margin-top: 0;
-    background-color: red;
 }
 
 /* Выпадающий список */
@@ -69,12 +40,6 @@ ul li:last-child {
 ul li.selected {
     background-color: #4CAF50;
     color: white;
-}
-
-p {
-    margin-top: 15px;
-    font-size: 14px;
-    color: #333;
 }
 
 button {

@@ -68,12 +68,14 @@ def models():
     """
     if request.method == GET:
         dropdown_list = get_list_of_models()
-        return render_template('index.html', dropdown_list=dropdown_list)
+        return render_template('index.html', name=current_user.first_name, surname=current_user.last_name,
+                               dropdown_list=dropdown_list)
     else:
         profession = request.form.get('profession')
         profession_num = get_prof_num(profession)
         prof_models = get_prof_models(profession_num)
-        return render_template('index.html', profession=profession, prof_models=prof_models)
+        return render_template('index.html', name=current_user.first_name, surname=current_user.last_name,
+                               profession=profession, prof_models=prof_models)
 
 
 @app.route('/model-description', methods=[POST])
@@ -92,8 +94,8 @@ def model_description():
     learning_plot = get_learning_plot(model)
     # График важности признаков
     importance_plot = get_importance_plot(profession_num, model)
-    return render_template('description.html', profession=profession, lp=learning_plot, ip=importance_plot,
-                           **kwargs)
+    return render_template('description.html', name=current_user.first_name, surname=current_user.last_name,
+                           profession=profession, lp=learning_plot, ip=importance_plot, **kwargs)
 
 
 @app.route('/new-model', methods=[GET, POST])
@@ -105,11 +107,13 @@ def new_model():
     """
     dropdown_list = get_list_of_professions()
     if request.method == GET:
-        return render_template('new_model.html', dropdown_list=dropdown_list)
+        return render_template('new_model.html', name=current_user.first_name, surname=current_user.last_name,
+                               dropdown_list=dropdown_list)
     if request.method == POST:
         profession = request.form.get('profession')
         model_type = request.form.get('model')
-        return render_template('new_model.html', profession=profession, model=model_type)
+        return render_template('new_model.html', name=current_user.first_name, surname=current_user.last_name,
+                               profession=profession, model=model_type)
 
 
 @app.route('/upload-dataset', methods=[POST])
@@ -130,35 +134,36 @@ def new_model_train():
     file = request.files['file']
     if model_type == 'CatboostRegressor':
         train_catboost(file, profession_num, epochs, early_stop, train_test, learning_rate, depth)
-    return render_template('index.html', dropdown_list=dropdown_list, new_model=True)
+    return render_template('index.html', name=current_user.first_name, surname=current_user.last_name,
+                           dropdown_list=dropdown_list, new_model=True)
 
 
 @app.route('/loading', methods=[GET])
 @login_required
 def loading_page():
     """Заглушка на пустые страницы"""
-    return render_template('loading.html')
+    return render_template('loading.html', name=current_user.first_name, surname=current_user.last_name)
 
 
 @app.route('/test_new_model', methods=[GET])
 @login_required
 def test_new_model():
     """Тестирование новой модели"""
-    return render_template('test_new_model.html')
+    return render_template('test_new_model.html', name=current_user.first_name, surname=current_user.last_name)
 
 
 @app.route('/copy_unfinished_model', methods=[GET])
 @login_required
 def copy_unfinished_model():
     """Копирование модели"""
-    return render_template('copy_unfinished_model.html')
+    return render_template('copy_unfinished_model.html', name=current_user.first_name, surname=current_user.last_name)
 
 
 @app.route('/model_for_use', methods=[GET])
 @login_required
 def model_for_use():
     """Назначение финализированной модели для использования в калькуляторе"""
-    return render_template('model_for_use.html')
+    return render_template('model_for_use.html', name=current_user.first_name, surname=current_user.last_name)
 
 
 @app.route('/compare-fin-models', methods=[GET, POST])
@@ -168,19 +173,20 @@ def compare_fin_models():
     GET возвращает страницу с двумя списками финализированных моделей на выбор для сравнения.
     POST возвращает таблицу со сравнением метрик моделей."""
     if request.method == GET:
-        return render_template("compare_fin_models.html")
+        return render_template("compare_fin_models.html", name=current_user.first_name, surname=current_user.last_name)
     selected_models = request.form.get('selectedValues')
     selected_models = selected_models.split(',') if selected_models else []
     if not(2 <= len(selected_models) <= 5):
-        return render_template("compare_fin_models.html")
-    return render_template("compare_fin_models.html", result=True)
+        return render_template("compare_fin_models.html", name=current_user.first_name, surname=current_user.last_name)
+    return render_template("compare_fin_models.html", name=current_user.first_name, surname=current_user.last_name,
+                           result=True)
 
 
 @app.route('/check-queue', methods=[GET])
 @login_required
 def check_queue():
     """Страница с просмотром очереди на обучение. ТОЛЬКО ИНТЕРФЕЙС."""
-    return render_template("queue.html")
+    return render_template("queue.html", name=current_user.first_name, surname=current_user.last_name)
 
 
 @app.route('/archive', methods=[GET, POST])
@@ -193,12 +199,15 @@ def archive_work():
     2)обновляется страница с информацией об архивации/разархивации выбранных значений."""
     dropdown_list = get_list_of_professions()
     if request.method == GET:
-        return render_template("archive.html", dropdown_list=dropdown_list)
+        return render_template("archive.html", name=current_user.first_name, surname=current_user.last_name,
+                               dropdown_list=dropdown_list)
     elif request.method == POST and (profession := request.form.get('profession')) is not None:
         archive = request.form.get('archive')
-        return render_template("archive.html", profession=profession, archive=archive)
+        return render_template("archive.html", name=current_user.first_name, surname=current_user.last_name,
+                               profession=profession, archive=archive)
     elif request.method == POST and (selectedValues := request.form.get('selectedValues')) is not None:
-        return render_template("archive.html", dropdown_list=dropdown_list, archived=True)
+        return render_template("archive.html", name=current_user.first_name, surname=current_user.last_name,
+                               dropdown_list=dropdown_list, archived=True)
 
 
 if __name__ == '__main__':
