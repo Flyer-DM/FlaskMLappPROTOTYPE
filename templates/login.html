@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Авторизация</title>
@@ -16,34 +16,99 @@
                     <h1>Калькулятор</h1>
                     <div class="card">
                         <div class="card-body p-5">
-                            <h2 class="text-uppercase text-center mb-5">Авторизация</h2>
+                            {% if not connect %}
+                                <h2 class="text-uppercase text-center mb-5">Авторизация</h2>
 
-                            <!-- error message -->
-                            {% with messages = get_flashed_messages() %}
-                                {% if messages %}
-                                    <div class="alert alert-danger">{{ messages[0] }}</div>
+                                <!-- error message -->
+                                {% with messages = get_flashed_messages() %}
+                                    {% if messages %}
+                                        <div class="alert alert-danger">{{ messages[0] }}</div>
+                                    {% endif %}
+                                {% endwith %}
+                                {% if sendmessage %}
+                                    <div class="alert alert-success">Сообщение отправлено</div>
                                 {% endif %}
-                            {% endwith %}
 
-                            <form action="{{ url_for('login') }}" method="post">
-                                <div class="form-outline mb-4">
-                                    <label class="control-label" for="username">Логин</label> :
-                                    <input type="text" class="form-control form-control-lg" id="username" name="username" placeholder="Введите свой логин" autofocus="autofocus">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="password">Пароль</label>:
-                                    <input type="password" id="password" name="password" class="form-control form-control-lg" placeholder="Введите пароль" />
-                                </div>
-                                <br>
-                                <div class="form-group">
-                                    <div class="row">
-                                        <div class="d-flex justify-content-center">
-                                            <input type="submit" name="login-submit" id="login-submit"
-                                                   class="btn btn-success btn-block btn-lg gradient-custom-4 text-body" value="Войти" />
+                                <form action="{{ url_for('login') }}" method="post">
+                                    <div class="form-outline mb-4">
+                                        <label class="control-label" for="username">Логин</label> :
+                                        <input type="text" class="form-control form-control-lg" id="username" name="username" placeholder="Введите свой логин" autofocus="autofocus" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="password">Пароль</label>:
+                                        <input type="password" id="password" name="password" class="form-control form-control-lg" placeholder="Введите пароль" required/>
+                                    </div>
+                                    <br>
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="d-flex justify-content-center">
+                                                <input type="submit" name="login-submit" id="login-submit"
+                                                       class="btn btn-success btn-block btn-lg gradient-custom-4 text-body" value="Войти" />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </form>
+                                </form>
+                                {% if cantlogin %}
+                                    <form action="/connect" method="get">
+                                        <div class="form-group">
+                                            <div class="row">
+                                                <div class="d-flex justify-content-center">
+                                                    <input type="submit" value="Не удаётся войти?" id="cant-login"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                {% endif %}
+                            {% else %}
+                                <form action="/login" method="get">
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="d-flex justify-content-center">
+                                                <input type="submit" name="login-submit" id="login-submit"
+                                                       class="btn btn-success btn-block btn-lg gradient-custom-4 text-body" value="Логин" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                                <form action="/connect" method="post">
+                                    <p>Напишите имя и фамилию, а также почту, куда можно выслать Ваши логин и пароль</p>
+                                    <div class="form-outline mb-4">
+                                        <label for="name"></label>
+                                        <input type="text" class="form-control form-control-lg" name="name" id="name"
+                                               placeholder="Ваше имя" autofocus="autofocus" required>
+                                    </div>
+                                    <div class="form-outline mb-4">
+                                        <label for="surname"></label>
+                                        <input type="text" class="form-control form-control-lg" id="surname"
+                                               name="surname" placeholder="Ваша фамилия" required>
+                                    </div>
+                                    <div class="form-outline mb-4">
+                                        <label for="email"></label>
+                                            <input type="email" class="form-control form-control-lg" id="email"
+                                                   name="email" placeholder="Ваша почта" required>
+                                    </div>
+                                    <div class="form-outline mb-4">
+                                        <label for="add"></label>
+                                            <textarea type="text" class="form-control form-control-lg" name="add"
+                                                      oninput="document.querySelector('input#id').value = this.value;"
+                                                      placeholder="Дополнительное сообщение" id="add"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="d-flex justify-content-center">
+                                                <input type="submit" name="login-submit" id="login-submit"
+                                                       class="btn btn-success btn-block btn-lg gradient-custom-4 text-body"
+                                                       value="Отправить" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <br>
+                                    <p>Почта для связи с администратором:
+                                        <code id="admin-email">dm_kondrasov@vnii-truda.ru</code>
+                                    </p>
+                                <script src="/static/js/copyToClipboard.js"></script>
+                                </form>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

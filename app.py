@@ -27,9 +27,9 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=[GET, POST])
 def login():
-    if request.method == 'POST':
+    if request.method == POST:
         username = request.form.get('username')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
@@ -38,7 +38,23 @@ def login():
             return redirect(url_for('main'))
         else:
             flash('Неверный логин/пароль')
+            return render_template('login.html', cantlogin=True)
     return render_template('login.html')
+
+
+@app.route('/connect', methods=[GET, POST])
+def connect_to_admin():
+    """
+    Отправка сообщения на почту в случае, если пользователь не может войти в систему
+    :return: загрузка html страницы
+    """
+    if request.method == GET:
+        return render_template('login.html', connect=True)
+    name = request.form.get("name")
+    surname = request.form.get("surname")
+    email = request.form.get("email")
+    added_info = request.form.get("add")
+    return render_template('login.html', sendmessage=True)
 
 
 @app.route('/logout')

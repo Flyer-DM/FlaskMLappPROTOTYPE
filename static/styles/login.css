@@ -3,26 +3,59 @@
     background: -webkit-linear-gradient(to right, #4169e1, #000080);
     background: linear-gradient(to right, #4169e1, #000080)
 }
+
 .gradient-custom-4 {
     background: #000080;
     background: -webkit-linear-gradient(to right, #4169e1, #000080);
     background: linear-gradient(to right, #4169e1, #000080)
 }
+
 .btn-success.gradient-custom-4 {
     color: #ffffff !important;
     border-color: #4169e1 !important; 
 }
+
 .card {
     border-radius: 15px;
 }
+
 body {
     background: #000080;
     background: -webkit-linear-gradient(to right, #4169e1, #000080);
     background: linear-gradient(to right, #4169e1, #000080)
 }
+
 h1 {
     font-family: impact, serif;
     font-size: 50px;
     color: white;
     text-align: center;
+}
+
+#cant-login {
+    margin-top: 20px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+#cant-login:hover {
+    color: #000080;
+    text-decoration: #000080 underline;
+}
+
+#add {
+    resize: none;
+    height: 110px;
+}
+
+#admin-email {
+    cursor: pointer;
+}
+
+.copied {
+    cursor: pointer;
+    color: green;
+    transition: color 0.3s ease;
 }
