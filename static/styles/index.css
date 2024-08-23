@@ -58,7 +58,6 @@ h1 {
 
 p {
     font-size: 1.2em;
-    margin: 10px 0;
 }
 
 img {
@@ -86,4 +85,16 @@ img {
 #logout-button {
     margin-top: 0;
     background-color: red;
+}
+
+#logout-form {
+    margin-top: -20px;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: baseline;
+}
+
+#logout-form>p{
+    margin-left: 10px;
 }

@@ -1,42 +1,39 @@
 import re
 from flask import Flask, render_template, request, redirect, url_for, flash
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from domain import User, db
 from utilities.model_utils import *
 from utilities.train_model import train_catboost
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = open('interface_db.txt', 'r').read()
+db.init_app(app)
 
-app.secret_key = 'your_secret_key'  
+
+POST = "POST"
+GET = "GET"
+
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите, чтобы получить доступ к этой странице.'
 
-users = {'admin': generate_password_hash('password')}
-
-
-class User(UserMixin):
-    def __init__(self, username):
-        self.id = username
-
 
 @login_manager.user_loader
 def load_user(user_id):
-    if user_id in users:
-        return User(user_id)
-    return None
+    return User.query.get(int(user_id))
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        if username in users and check_password_hash(users[username], password):
-            user = User(username)
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
             login_user(user)
             return redirect(url_for('main'))
         else:
@@ -51,10 +48,6 @@ def logout():
     return redirect(url_for('login'))
 
 
-POST = "POST"
-GET = "GET"
-
-
 @app.route('/index', methods=[GET])
 @app.route('/', methods=[GET])
 @login_required
@@ -63,7 +56,7 @@ def main():
     Первая страница после логина
     :return: загрузка html страницы
     """
-    return render_template('main.html')
+    return render_template('main.html', name=current_user.first_name, surname=current_user.last_name)
 
 
 @app.route('/main', methods=[GET, POST])
