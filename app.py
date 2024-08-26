@@ -153,11 +153,13 @@ def new_model_train():
     return render_template('index.html', name=current_user.first_name, surname=current_user.last_name,
                            dropdown_list=dropdown_list, new_model=True)
 
+
 @app.route('/new_model_page', methods=[GET])
 @login_required
 def new_model_page():
     """Страница создания модели, обучения модели"""
     return render_template('new_model.html')
+
 
 @app.route('/loading', methods=[GET])
 @login_required
