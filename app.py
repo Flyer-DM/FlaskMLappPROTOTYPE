@@ -4,6 +4,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from domain import User, db
 from utilities.model_utils import *
 from utilities.train_model import train_catboost
+from utilities.send_email import send_email_assync
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -45,15 +46,13 @@ def login():
 @app.route('/connect', methods=[GET, POST])
 def connect_to_admin():
     """
-    Отправка сообщения на почту в случае, если пользователь не может войти в систему
+    Асинхронная отправка сообщения на почту в случае, если пользователь не может войти в систему
     :return: загрузка html страницы
     """
     if request.method == GET:
         return render_template('login.html', connect=True)
-    name = request.form.get("name")
-    surname = request.form.get("surname")
-    email = request.form.get("email")
-    added_info = request.form.get("add")
+    send_email_assync(request.form.get("name"), request.form.get("surname"), request.form.get("email"),
+                      request.form.get("add"))
     return render_template('login.html', sendmessage=True)
 
 
