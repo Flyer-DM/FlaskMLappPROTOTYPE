@@ -1,7 +1,7 @@
 from domain.db_connection import db
 
 
-class ModelHyperparam(db.Base):
+class ModelHyperparam(db.Model):
     __tablename__ = 'model_hyperparam'
 
     id = db.Column(db.Integer, primary_key=True)

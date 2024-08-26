@@ -1,7 +1,7 @@
 import re
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from domain import User, db
+from domain import User, ModelMeta, db
 from utilities.model_utils import *
 from utilities.train_model import train_catboost
 from utilities.send_email import send_email_assync
@@ -153,11 +153,36 @@ def new_model_train():
                            dropdown_list=dropdown_list, new_model=True)
 
 
-@app.route('/new_model_page', methods=[GET])
+@app.route('/new_model_page', methods=[GET, POST])
+@app.route('/new_model_page/<int:state>', methods=[GET, POST])
 @login_required
-def new_model_page():
-    """Страница создания модели, обучения модели"""
-    return render_template('new_model.html')
+def model_creation_page(state: int = None):
+    """Страница создания новой модели"""
+    user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
+    all_models = ModelMeta.query.all()
+    if request.method == GET:
+        return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models)
+    if state == 0:
+        return render_template('new_model.html', name=user_name, surname=user_surname, state=state)
+    elif state == 1:
+        name = request.form.get('model_name')
+        description = request.form.get('model_description')
+        model_continue = request.form.get('continue')
+        model = ModelMeta(name=name, description=description, author=user_id, last_changed=user_id)
+        db.session.add(model)
+        db.session.commit()
+        db.session.expunge_all()
+        db.session.close()
+        if model_continue == 'Продолжить':
+            return render_template('new_model.html', name=user_name, surname=user_surname, state=state)
+        return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models, saved=1)
+
+
+@app.route('/new_model_continue/<int:model_id>', methods=[GET, POST])
+@login_required
+def create_new_model(model_id: int):
+    user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
+    return render_template('new_model.html', name=user_name, surname=user_surname)
 
 
 @app.route('/loading', methods=[GET])

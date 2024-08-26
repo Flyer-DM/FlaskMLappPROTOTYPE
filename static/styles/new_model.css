@@ -83,3 +83,73 @@ img {
 .text-info-main{
     margin-top: 30px;
 }
+
+/* Выпадающий список */
+.container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 300px;
+    margin: 0 auto;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+ul li {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #ccc;
+}
+
+ul li:last-child {
+    border-bottom: none;
+}
+
+ul li.selected {
+    background-color: #4CAF50;
+    color: white;
+}
+
+button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+/* Выпадающий список */
+
+#model_description {
+    resize: none;
+    height: 200px;
+}
+
+#form-state-0 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+input[name="model_name"], #model_description, #author {
+    width: 800px;
+}
+
+li>a {
+    text-decoration: none;
+}

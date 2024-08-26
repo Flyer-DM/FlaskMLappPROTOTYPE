@@ -1,8 +1,10 @@
 from datetime import datetime
 from domain.db_connection import db
+from domain.user import User
+from domain.model_method import ModelMethod
 
 
-class ModelMeta(db.Base):
+class ModelMeta(db.Model):
     __tablename__ = 'model_meta'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -28,3 +30,8 @@ class ModelMeta(db.Base):
     used = db.Column(db.Boolean, default=False, nullable=False)  # Используется в калькуляторе?
     retrained = db.Column(db.Integer, default=0, nullable=False)  # Сколько раз была переобучена
     orig = db.Column(db.Integer, db.ForeignKey("model_meta.id"), nullable=True)  # Ссылка на оригинал модели, если копия
+
+    author_id = db.relationship(User, foreign_keys=[author])
+    last_changed_user = db.relationship(User, foreign_keys=[last_changed])
+    method_id = db.relationship(ModelMethod)
+    original_model = db.relationship("ModelMeta", remote_side=[id])
