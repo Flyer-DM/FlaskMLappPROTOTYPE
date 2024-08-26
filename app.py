@@ -139,6 +139,11 @@ def new_model_train():
         train_catboost(file, profession_num, epochs, early_stop, train_test, learning_rate, depth)
     return render_template('index.html', dropdown_list=dropdown_list, new_model=True)
 
+@app.route('/new_model_page', methods=[GET])
+@login_required
+def new_model_page():
+    """Страница создания модели, обучения модели"""
+    return render_template('new_model.html')
 
 @app.route('/loading', methods=[GET])
 @login_required
