@@ -36,12 +36,11 @@
             <label for="customSelect">Незавершённые модели:</label>
             <ul id="customSelect">
                 {% for model in all_models %}
-{#                    <li><a href="/new_model_continue/{{ model.id }}/{{ model.state }}">#}
-                    <li><a href="#">
+                    <li><a href="/new_model_continue/{{ model.id }}/1">
                         <b>"{{ model.name }}"
                         </b> для ТП <b>{{ get_prof_name(model.profession) if model.profession else 'не указана' }}</b>
                         создана <b>{{ model.author_id.last_name }} {{ model.author_id.first_name }}</b>
-                        <b>{{ model.updated_on }}</b>.
+                        <b>{{ model.creation_on }}</b>.
                         Метод: <b>{{ model.method_id.name if model.method_id.name else 'не указан' }}</b>.
                         Последнее изменение: <b>{{ model.updated_on }}</b>
                         внесено <b>{{ model.last_changed_user.last_name }} {{ model.last_changed_user.first_name }}</b>.
@@ -52,34 +51,51 @@
             </ul>
         </div>
     {% elif state == 0 %}
+        {% if model is defined %}
+            <h2>Изменение модели</h2>
+        {% endif %}
         <form action="/new_model_page" method="get">
             <input type="submit" value="Назад">
         </form>
         <form action="/new_model_page/1" method="post" id="form-state-0">
             <label value="Название модели">Название модели
-                <input type="text" name="model_name" required>
+                <input type="text" name="model_name" required value="{{ model.name if model is defined else '' }}">
             </label>
             <label>Типовая позиция
-                <select name="profession">
-                {% for prof in prof_list %}
-                    <option value="{{prof}}">{{prof}}</option>
-                {% endfor %}
+                {% if prof_list is defined %}
+                    <select name="profession" >
+                    {% for prof in prof_list %}
+                        <option value="{{prof}}">{{prof}}</option>
+                    {% endfor %}
+                {% elif model is defined %}
+                    <select name="profession">
+                        <option value="{{ get_prof_name(model.profession) }}" selected>{{ get_prof_name(model.profession) }}</option>
+                {% endif %}
                 </select>
             </label>
             <label value="Описание модели" for="model_description">Описание модели
                 <textarea type="text" class="form-control form-control-lg" name="model_description"
                           oninput="document.querySelector('input#id').value = this.value;"
-                          id="model_description" value="{{ model.description if model else none }}"></textarea>
+                          id="model_description">{{ model.description if model is defined else '' }}</textarea>
             </label>
             <label value="Автор">Автор
                 <input type="text" disabled value="{{ surname }} {{ name }}" id="author">
             </label>
+            {% if model is defined %}
+                <input type="hidden" name="defined_model" value="{{ model.id }}">
+            {% endif %}
             <input type="submit" name="continue" value="Продолжить">
             <input type="submit" name="continue" value="Сохранить и закрыть">
         </form>
     {% elif state == 1 %}
+        {% if model is defined %}
+            <h2>Изменение модели</h2>
+        {% endif %}
         <form action="/new_model_page" method="get">
             <input type="submit" value="На главную">
+        </form>
+        <form action="/new_model_continue/{{ model.id }}/0" method="get">
+            <input type="submit" value="Назад">
         </form>
         <form action="/new_model_page/2" method="post" id="form-state-0">
             <label>Метод моделирования
@@ -88,7 +104,7 @@
                 </select>
             </label>
             <input type="hidden" name="model" value="{{ model.id }}">
-            <input type="submit" name="continue" value="Продолжить">
+            <input type="submit" name="continue" value="Продолжить" disabled>
             <input type="submit" name="continue" value="Сохранить и закрыть">
         </form>
     {% endif %}

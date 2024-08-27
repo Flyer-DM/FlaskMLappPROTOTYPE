@@ -1,4 +1,5 @@
 import re
+from typing import Literal
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from domain import db, User, ModelMeta, ModelMethod
@@ -167,19 +168,28 @@ def model_creation_page(state: int = None):
         prof_list = get_list_of_professions()
         return render_template('new_model.html', name=user_name, surname=user_surname, prof_list=prof_list, state=state)
     elif state == 1:  # обработка создания записи о модели
-        name = request.form.get('model_name')
-        profession = get_prof_num(request.form.get('profession'))
-        description = request.form.get('model_description')
-        model_continue = request.form.get('continue')
-        model = ModelMeta(name=name, description=description, author=user_id, last_changed=user_id,
-                          profession=profession)
-        db.session.add(model)
+        model_id = request.form.get('defined_model')
+        model: ModelMeta = ModelMeta.query.get(int(model_id if model_id else 0))  # вносятся изменения
+        name = request.form.get('model_name')  # может быть изменено значение
+        description = request.form.get('model_description')  # может быть изменено значение
+        if model:  # если модель уже существует
+            model.name = name
+            model.description = description
+            model.last_changed = user_id
+            saved = 2
+        else:  # добавляется новая запись о модели
+            profession = get_prof_num(request.form.get('profession'))  # не может быть изменено значение
+            model = ModelMeta(name=name, description=description, author=user_id, last_changed=user_id,
+                              profession=profession)
+            saved = 1
+            db.session.add(model)
         db.session.commit()
+        model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':  # переход на следующий этап создания модели
             return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state)
         all_models = ModelMeta.query.all()
         return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
-                               get_prof_name=get_prof_name, saved=1)
+                               get_prof_name=get_prof_name, saved=saved)
     elif state == 2:  # обработка добавления метода моделирования
         model: ModelMeta = ModelMeta.query.get(int(request.form.get('model')))
         method: ModelMethod = ModelMethod.query.filter_by(name=request.form.get('model_method')).first()
@@ -193,21 +203,19 @@ def model_creation_page(state: int = None):
                                get_prof_name=get_prof_name, saved=1)
 
 
-@app.route('/new_model_continue/<int:model_id>/<int:state>', methods=[GET, POST])
+@app.route('/new_model_continue/<int:model_id>/<int:step>', methods=[GET, POST])
 @login_required
-def create_new_model(model_id: int, state: int):
-    pass
-    # print(model_id, state)
-    # user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
-    # model_state = (model := ModelMeta.query.get(model_id)).state
-    # if state is None:  # переход на этап создания записи (изменение названия/описания/типовой позиции)
-    #     change_prof = bool(model.retrained)  # модель уже тренирована (тогда нельзя менять ТП)
-    #     prof_list = get_list_of_professions()
-    #     return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=model_state,
-    #                            prof_list=prof_list, change_prof=change_prof)
-    # if state == 0:  # создана запись о модели в БД (название/автор/дата/описание/типовая позиция)
-    #     return render_template('new_model.html', name=user_name, surname=user_surname, state=model_state+1)
-
+def continue_with_model(model_id: int, step: Literal[0, 1]):
+    """Продолжение создания модели
+    :param model_id: id модели из БД, которую меняем на определённом шаге
+    :param step: 0 - меняем предыдущий этап создания модели (кнопка "Назад" на страницах), 1 - переход на следующий этап
+    незавершённой модели (нажатие на ссылку модели из списка всех моделей)
+    """
+    user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
+    state = (model := ModelMeta.query.get(model_id)).state + step
+    if state in (0, 1):  # создана запись о модели в БД (название/автор/дата/описание/типовая позиция)
+        return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
+                               get_prof_name=get_prof_name, state=state)
 
 
 @app.route('/loading', methods=[GET])
