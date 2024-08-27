@@ -19,8 +19,10 @@
 <div class="d-flex flex-column align-items-center">
     <h1>Создание модели</h1>
     {% if state is undefined %}
-        {% if saved is defined %}
+        {% if saved is defined and saved == 1 %}
             <p class="first_p">Модель сохранена!</p>
+        {% elif saved is defined and saved == 2 %}
+            <p class="first_p">Модель обновлена!</p>
         {% endif %}
         <form action="/index" method="get">
             <input type="submit" value="На главную">
@@ -34,7 +36,18 @@
             <label for="customSelect">Незавершённые модели:</label>
             <ul id="customSelect">
                 {% for model in all_models %}
-                    <li><a href="/new_model_continue/{{ model.id }}"><b>"{{ model.name }}"</b> для ТП <b>{{ model.profession if model.profession else 'не указана' }}</b> создана <b>{{ model.author_id.last_name }} {{ model.author_id.first_name }}</b> <b>{{ model.updated_on }}</b>. Метод: <b>{{ model.method_id.name if model.method_id.name else 'не указан' }}</b>. Последнее изменение: <b>{{ model.updated_on }}</b> внесено <b>{{ model.last_changed_user.last_name }} {{ model.last_changed_user.first_name }}</b>. Статус модели: <b>{{ model.state }}</b>. Переобучена раз: <b>{{ model.retrained }}</b>.</a></li>
+{#                    <li><a href="/new_model_continue/{{ model.id }}/{{ model.state }}">#}
+                    <li><a href="#">
+                        <b>"{{ model.name }}"
+                        </b> для ТП <b>{{ get_prof_name(model.profession) if model.profession else 'не указана' }}</b>
+                        создана <b>{{ model.author_id.last_name }} {{ model.author_id.first_name }}</b>
+                        <b>{{ model.updated_on }}</b>.
+                        Метод: <b>{{ model.method_id.name if model.method_id.name else 'не указан' }}</b>.
+                        Последнее изменение: <b>{{ model.updated_on }}</b>
+                        внесено <b>{{ model.last_changed_user.last_name }} {{ model.last_changed_user.first_name }}</b>.
+                        Статус модели: <b>{{ model.state }}</b>.
+                        Переобучена раз: <b>{{ model.retrained }}</b>.
+                    </a></li>
                 {% endfor %}
             </ul>
         </div>
@@ -43,20 +56,38 @@
             <input type="submit" value="Назад">
         </form>
         <form action="/new_model_page/1" method="post" id="form-state-0">
-            <label value="Название модели">
-                <p>Название модели</p>
+            <label value="Название модели">Название модели
                 <input type="text" name="model_name" required>
             </label>
-            <label value="Описание модели" for="model_description">
-                <p>Описание модели</p>
+            <label>Типовая позиция
+                <select name="profession">
+                {% for prof in prof_list %}
+                    <option value="{{prof}}">{{prof}}</option>
+                {% endfor %}
+                </select>
+            </label>
+            <label value="Описание модели" for="model_description">Описание модели
                 <textarea type="text" class="form-control form-control-lg" name="model_description"
                           oninput="document.querySelector('input#id').value = this.value;"
-                          id="model_description"></textarea>
+                          id="model_description" value="{{ model.description if model else none }}"></textarea>
             </label>
-            <label value="Автор">
-                <p>Автор</p>
+            <label value="Автор">Автор
                 <input type="text" disabled value="{{ surname }} {{ name }}" id="author">
             </label>
+            <input type="submit" name="continue" value="Продолжить">
+            <input type="submit" name="continue" value="Сохранить и закрыть">
+        </form>
+    {% elif state == 1 %}
+        <form action="/new_model_page" method="get">
+            <input type="submit" value="На главную">
+        </form>
+        <form action="/new_model_page/2" method="post" id="form-state-0">
+            <label>Метод моделирования
+                <select name="model_method">
+                    <option value="CatBoostRegressor">CatBoostRegressor</option>
+                </select>
+            </label>
+            <input type="hidden" name="model" value="{{ model.id }}">
             <input type="submit" name="continue" value="Продолжить">
             <input type="submit" name="continue" value="Сохранить и закрыть">
         </form>

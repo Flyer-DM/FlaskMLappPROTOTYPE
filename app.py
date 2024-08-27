@@ -1,7 +1,7 @@
 import re
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from domain import User, ModelMeta, db
+from domain import db, User, ModelMeta, ModelMethod
 from utilities.model_utils import *
 from utilities.train_model import train_catboost
 from utilities.send_email import send_email_assync
@@ -161,28 +161,53 @@ def model_creation_page(state: int = None):
     user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
     all_models = ModelMeta.query.all()
     if request.method == GET:
-        return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models)
-    if state == 0:
-        return render_template('new_model.html', name=user_name, surname=user_surname, state=state)
-    elif state == 1:
+        return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
+                               get_prof_name=get_prof_name)
+    if state == 0:  # создание записи о модели
+        prof_list = get_list_of_professions()
+        return render_template('new_model.html', name=user_name, surname=user_surname, prof_list=prof_list, state=state)
+    elif state == 1:  # обработка создания записи о модели
         name = request.form.get('model_name')
+        profession = get_prof_num(request.form.get('profession'))
         description = request.form.get('model_description')
         model_continue = request.form.get('continue')
-        model = ModelMeta(name=name, description=description, author=user_id, last_changed=user_id)
+        model = ModelMeta(name=name, description=description, author=user_id, last_changed=user_id,
+                          profession=profession)
         db.session.add(model)
         db.session.commit()
-        db.session.expunge_all()
-        db.session.close()
+        if model_continue == 'Продолжить':  # переход на следующий этап создания модели
+            return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state)
+        all_models = ModelMeta.query.all()
+        return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
+                               get_prof_name=get_prof_name, saved=1)
+    elif state == 2:  # обработка добавления метода моделирования
+        model: ModelMeta = ModelMeta.query.get(int(request.form.get('model')))
+        method: ModelMethod = ModelMethod.query.filter_by(name=request.form.get('model_method')).first()
+        model.method = method.id
+        db.session.commit()
+        model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':
-            return render_template('new_model.html', name=user_name, surname=user_surname, state=state)
-        return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models, saved=1)
+            pass
+        all_models = ModelMeta.query.all()
+        return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
+                               get_prof_name=get_prof_name, saved=1)
 
 
-@app.route('/new_model_continue/<int:model_id>', methods=[GET, POST])
+@app.route('/new_model_continue/<int:model_id>/<int:state>', methods=[GET, POST])
 @login_required
-def create_new_model(model_id: int):
-    user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
-    return render_template('new_model.html', name=user_name, surname=user_surname)
+def create_new_model(model_id: int, state: int):
+    pass
+    # print(model_id, state)
+    # user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
+    # model_state = (model := ModelMeta.query.get(model_id)).state
+    # if state is None:  # переход на этап создания записи (изменение названия/описания/типовой позиции)
+    #     change_prof = bool(model.retrained)  # модель уже тренирована (тогда нельзя менять ТП)
+    #     prof_list = get_list_of_professions()
+    #     return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=model_state,
+    #                            prof_list=prof_list, change_prof=change_prof)
+    # if state == 0:  # создана запись о модели в БД (название/автор/дата/описание/типовая позиция)
+    #     return render_template('new_model.html', name=user_name, surname=user_surname, state=model_state+1)
+
 
 
 @app.route('/loading', methods=[GET])
