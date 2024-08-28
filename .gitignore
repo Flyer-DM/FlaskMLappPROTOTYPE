@@ -2,6 +2,8 @@
 /utilities/__pycache__
 email_password.txt
 interface_db.txt
+users.txt
+data_db.txt
 domain/__pycache__/__init__.cpython-311.pyc
 domain/__pycache__/db_connection.cpython-311.pyc
 domain/__pycache__/model_hyperparam.cpython-311.pyc

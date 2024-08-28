@@ -41,15 +41,12 @@
                         <th>ТП</th>
                         <th>Автор</th>
                         <th>Дата создания</th>
-                        <th>Метод</th>
+                        <th>Метод моделирования</th>
                         <th>Описание модели</th>
-                        <th>Последнее изменение и пользователь</th>
+                        <th>Последнее изменение пользователем</th>
                         <th>Статус модели</th>
                         <th>Переобучена раз</th>
-                        <th>Метод моделирования</th>
                         <th>Использование в калькуляторе</th>
-                        <th>Сколько раз была переобучена</th>
-                        <th>Ссылка на оригинал модели, если копия</th>
                         <th>Финализация модели</th>
                     </tr>
                 </thead>
@@ -59,10 +56,10 @@
                         <td><a href="/new_model_continue/{{ model.id }}/{{ model.state + 1 }}"><b>"{{ model.name }}"</b></a></td>
                         <td><b>{{ get_prof_name(model.profession) if model.profession else 'не указана' }}</b></td>
                         <td><b>{{ model.author_id.last_name }} {{ model.author_id.first_name }}</b></td>
-                        <td><b>{{ model.creation_on }}</b></td>
+                        <td><b>{{ model.creation_on.strftime('%Y.%m.%d %H:%M:%S') }}</b></td>
                         <td><b>{{ model.method_id.name if model.method_id.name else 'не указан' }}</b></td>
                         <td><b>{{ model.description }}</b></td>
-                        <td><b>{{ model.updated_on }}</b>, <b>{{ model.last_changed_user.last_name }} {{ model.last_changed_user.first_name }}</b></td>
+                        <td><b>{{ model.updated_on.strftime('%Y.%m.%d %H:%M:%S') }}</b>, <b>{{ model.last_changed_user.last_name }} {{ model.last_changed_user.first_name }}</b></td>
                         <td>
                             <b>
                             {% if model.state == 0 %}
@@ -85,11 +82,8 @@
                             </b>
                         </td>
                         <td><b>{{ model.retrained }}</b></td>
-                        <td><b>{{ model.method }}</b></td>
-                        <td><b>{{ model.used }}</b></td>
-                        <td><b>{{ model.retrained }}</b></td>
-                        <td><b>{{ model.orig }}</b></td>
-                        <td><b>{{ model.finalized }}</b></td>
+                        <td><b>{{ 'Да' if model.used else 'Нет' }}</b></td>
+                        <td><b>{{ 'Да' if model.finalized else 'Нет' }}</b></td>
                     </tr>
                     {% endfor %}
                 </tbody>
