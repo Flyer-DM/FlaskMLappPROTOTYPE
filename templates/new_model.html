@@ -30,26 +30,66 @@
         <form action="/new_model_page/0" method="post">
             <input type="submit" value="Создать новую модель">
         </form>
-        <h2>Или</h2>
+        <h2>ИЛИ</h2>
         <p>Продолжить создание незавершённой модели</p>
         <div class="container">
-            <label for="customSelect">Незавершённые модели:</label>
-            <ul id="customSelect">
-                {% for model in all_models %}
-                    <li><a href="/new_model_continue/{{ model.id }}/{{ model.state + 1 }}">
-                        <b>"{{ model.name }}"
-                        </b> для ТП <b>{{ get_prof_name(model.profession) if model.profession else 'не указана' }}</b>
-                        создана <b>{{ model.author_id.last_name }} {{ model.author_id.first_name }}</b>
-                        <b>{{ model.creation_on }}</b>.
-                        Метод: <b>{{ model.method_id.name if model.method_id.name else 'не указан' }}</b>.
-                        Последнее изменение: <b>{{ model.updated_on }}</b>
-                        внесено <b>{{ model.last_changed_user.last_name }} {{ model.last_changed_user.first_name }}</b>.
-                        Статус модели: <b>{{ model.state }}</b>.
-                        Переобучена раз: <b>{{ model.retrained }}</b>.
-                    </a></li>
-                {% endfor %}
-            </ul>
+            <label for="modelsTable">Незавершённые модели:</label>
+            <table id="modelsTable" class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Название модели</th>
+                        <th>ТП</th>
+                        <th>Автор</th>
+                        <th>Дата создания</th>
+                        <th>Метод моделирования</th>
+                        <th>Описание модели</th>
+                        <th>Последнее изменение пользователем</th>
+                        <th>Статус модели</th>
+                        <th>Переобучена раз</th>
+                        <th>Использование в калькуляторе</th>
+                        <th>Финализация модели</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for model in all_models %}
+                    <tr>
+                        <td><a href="/new_model_continue/{{ model.id }}/{{ model.state + 1 }}"><b>"{{ model.name }}"</b></a></td>
+                        <td><b>{{ get_prof_name(model.profession) if model.profession else 'не указана' }}</b></td>
+                        <td><b>{{ model.author_id.last_name }} {{ model.author_id.first_name }}</b></td>
+                        <td><b>{{ model.creation_on.strftime('%Y.%m.%d %H:%M:%S') }}</b></td>
+                        <td><b>{{ model.method_id.name if model.method_id.name else 'не указан' }}</b></td>
+                        <td><b>{{ model.description }}</b></td>
+                        <td><b>{{ model.updated_on.strftime('%Y.%m.%d %H:%M:%S') }}</b>, <b>{{ model.last_changed_user.last_name }} {{ model.last_changed_user.first_name }}</b></td>
+                        <td>
+                            <b>
+                            {% if model.state == 0 %}
+                                Создана запись о модели в БД
+                            {% elif model.state == 1 %}
+                                Выбран метод моделирования
+                            {% elif model.state == 2 %}
+                                Выбраны гиперпараметры метода моделирования
+                            {% elif model.state == 3 %}
+                                Модель обучена
+                            {% elif model.state == 4 %}
+                                Скорректированы отрицательные значения
+                            {% elif model.state == 5 %}
+                                Модель финализирована
+                            {% elif model.state == 6 %}
+                                Модель используется
+                            {% else %}
+                                Неизвестный статус
+                            {% endif %}
+                            </b>
+                        </td>
+                        <td><b>{{ model.retrained }}</b></td>
+                        <td><b>{{ 'Да' if model.used else 'Нет' }}</b></td>
+                        <td><b>{{ 'Да' if model.finalized else 'Нет' }}</b></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        
     {% elif state == 0 %}
         <h2>Добавление записи модели</h2>
         {% if model is defined %}
