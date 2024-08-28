@@ -194,6 +194,7 @@ def model_creation_page(state: int = None):
         method: ModelMethod = ModelMethod.query.filter_by(name=request.form.get('model_method')).first()
         model.method = method.id
         model.state = state - 1  # состояние модели = 1
+        model.last_changed = user_id
         db.session.commit()
         model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':
@@ -214,6 +215,7 @@ def model_creation_page(state: int = None):
                                   ('learning_rate', request.form.get('learning_rate').replace(',', '.', 1)),
                                   ('depth', request.form.get('depth')))
         model.state = state - 1  # состояние модели = 2
+        model.last_changed = user_id
         db.session.commit()
         model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':
