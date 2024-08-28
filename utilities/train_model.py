@@ -49,6 +49,24 @@ def train_catboost(dataset_name: FileStorage, profession_num: int,
         model.save_model(f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
 
 
-def add_model_hyperparams(db: SQLAlchemy, model_id: int, *params):
+def add_model_hyperparams(db: SQLAlchemy, model_id: int, *params) -> None:
     for param_name, param_value in params:
-        db.session.add(ModelHyperparam(model_id=model_id, name=param_name, value=param_value))
+        if hyperparam := ModelHyperparam.query.filter_by(model_id=model_id, name=param_name).first():
+            hyperparam.value = param_value
+        else:
+            db.session.add(ModelHyperparam(model_id=model_id, name=param_name, value=param_value))
+
+
+def get_catboost_hyperparams(model_id: int) -> dict:
+    epochs = ModelHyperparam.query.filter_by(model_id=model_id, name='epochs').first().value
+    early_stop = ModelHyperparam.query.filter_by(model_id=model_id, name='early_stop').first().value
+    train_test = ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value
+    learning_rate = ModelHyperparam.query.filter_by(model_id=model_id, name='learning_rate').first().value
+    depth = ModelHyperparam.query.filter_by(model_id=model_id, name='depth').first().value
+    return {
+        'epochs': epochs,
+        'early_stop': early_stop,
+        'train_test': train_test,
+        'learning_rate': learning_rate,
+        'depth': depth,
+    }
