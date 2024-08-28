@@ -1,2 +1,10 @@
 /venv
 /utilities/__pycache__
+email_password.txt
+interface_db.txt
+domain/__pycache__/__init__.cpython-311.pyc
+domain/__pycache__/db_connection.cpython-311.pyc
+domain/__pycache__/model_hyperparam.cpython-311.pyc
+domain/__pycache__/model_meta.cpython-311.pyc
+domain/__pycache__/model_method.cpython-311.pyc
+domain/__pycache__/user.cpython-311.pyc
