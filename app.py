@@ -223,7 +223,56 @@ def model_creation_page(state: int = None):
         all_models = ModelMeta.query.all()
         return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
                                get_prof_name=get_prof_name, saved=1)
+    
+@app.route('/incomplete_model', methods=[GET, POST])
+@app.route('/incomplete_model/<int:model_id>', methods=[GET, POST])
+@login_required
+def incomplete_model(model_id: int = None):
+    """Страница открытия незавершённой модели и подробностей о модели"""
+    user_name, user_surname = current_user.first_name, current_user.last_name
+    all_models = ModelMeta.query.all()
 
+    if model_id is not None:
+        model = ModelMeta.query.get(model_id)
+        return render_template('incomplete_model.html', name=user_name, surname=user_surname, model=model, 
+                               get_prof_name=get_prof_name, show_table=False)
+    
+    return render_template('incomplete_model.html', name=user_name, surname=user_surname, all_models=all_models,
+                           get_prof_name=get_prof_name, show_table=True)
+
+
+@app.route('/incomplete_model/<int:model_id>', methods=[GET, POST])
+@login_required
+def continue_incomplete_model(model_id: int):
+    """Просмотр данных о выбранной модели
+    :param model_id: id модели из БД, которую нужно показать
+    """
+    user_name, user_surname = current_user.first_name, current_user.last_name
+    model = ModelMeta.query.get(model_id)
+
+    return render_template('model_details.html', name=user_name, surname=user_surname, model=model, get_prof_name=get_prof_name)
+
+
+@app.route('/delete_model/<int:model_id>', methods=['POST'])
+@login_required
+def delete_model(model_id: int):
+    """Удаление модели и связанных записей"""
+    try:
+        # Удаление всех связанных записей в model_hyperparam
+        ModelHyperparam.query.filter_by(model_id=model_id).delete()
+
+        # Удаление самой модели
+        model = db.session.get(ModelMeta, model_id)
+        if model:
+            db.session.delete(model)
+            db.session.commit()
+            flash('Модель успешно удалена', 'success')
+        else:
+            flash('Модель не найдена', 'error')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Ошибка при удалении модели: {str(e)}', 'error')
+    return redirect(url_for('incomplete_model'))
 
 @app.route('/new_model_continue/<int:model_id>/<int:state>', methods=[GET, POST])
 @login_required
