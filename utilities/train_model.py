@@ -3,6 +3,8 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from datetime import datetime
 from werkzeug.datastructures import FileStorage
+from flask_sqlalchemy.extension import SQLAlchemy
+from domain import ModelHyperparam
 
 
 def train_catboost(dataset_name: FileStorage, profession_num: int,
@@ -45,3 +47,8 @@ def train_catboost(dataset_name: FileStorage, profession_num: int,
     else:
         os.mkdir(path)
         model.save_model(f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
+
+
+def add_model_hyperparams(db: SQLAlchemy, model_id: int, *params):
+    for param_name, param_value in params:
+        db.session.add(ModelHyperparam(model_id=model_id, name=param_name, value=param_value))

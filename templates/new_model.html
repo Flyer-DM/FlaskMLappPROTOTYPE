@@ -36,7 +36,7 @@
             <label for="customSelect">Незавершённые модели:</label>
             <ul id="customSelect">
                 {% for model in all_models %}
-                    <li><a href="/new_model_continue/{{ model.id }}/1">
+                    <li><a href="/new_model_continue/{{ model.id }}/{{ model.state + 1 }}">
                         <b>"{{ model.name }}"
                         </b> для ТП <b>{{ get_prof_name(model.profession) if model.profession else 'не указана' }}</b>
                         создана <b>{{ model.author_id.last_name }} {{ model.author_id.first_name }}</b>
@@ -51,6 +51,7 @@
             </ul>
         </div>
     {% elif state == 0 %}
+        <h2>Добавление записи модели</h2>
         {% if model is defined %}
             <h2>Изменение модели</h2>
         {% endif %}
@@ -68,8 +69,7 @@
                         <option value="{{prof}}">{{prof}}</option>
                     {% endfor %}
                 {% elif model is defined %}
-                    <select name="profession">
-                        <option value="{{ get_prof_name(model.profession) }}" selected>{{ get_prof_name(model.profession) }}</option>
+                    <input type="text" name="profession" disabled value="{{ get_prof_name(model.profession) }}" id="author">
                 {% endif %}
                 </select>
             </label>
@@ -88,6 +88,7 @@
             <input type="submit" name="continue" value="Сохранить и закрыть">
         </form>
     {% elif state == 1 %}
+        <h2>Выбор метода моделирования</h2>
         {% if model is defined %}
             <h2>Изменение модели</h2>
         {% endif %}
@@ -99,88 +100,51 @@
         </form>
         <form action="/new_model_page/2" method="post" id="form-state-0">
             <label>Метод моделирования
-                <select name="model_method">
-                    <option value="CatBoostRegressor">CatBoostRegressor</option>
-                </select>
+                {% if method_change_allowed is defined and method_change_allowed and method is defined %}
+                    <input type="text" name="model_method" disabled value="{{ method }}">
+                {% else %}
+                    <select name="model_method">
+                        <option value="CatBoostRegressor">CatBoostRegressor</option>
+                    </select>
+                {% endif %}
             </label>
+            <input type="hidden" name="model" value="{{ model.id }}">
+            <input type="submit" name="continue" value="Продолжить">
+            <input type="submit" name="continue" value="Сохранить и закрыть">
+        </form>
+    {% elif state == 2 %}
+        <h2>Выбор гиперпараметров метода</h2>
+        <form action="/new_model_page" method="get">
+            <input type="submit" value="На главную">
+        </form>
+        <form action="/new_model_continue/{{ model.id }}/1" method="get">
+            <input type="submit" value="Назад">
+        </form>
+            <p>Профессия: {{ get_prof_name(model.profession) }}</p>
+            <p>Модель: {{ method }}</p>
+        <form action="/new_model_page/3" method="post" id="form-state-0">
+            {% if method == 'CatBoostRegressor' %}
+                <label value="Количество эпох">Количество эпох:
+                    <input type="number" name="epochs" value="1000" required min="1">
+                </label>
+                <label value="Ранняя остановка">Ранняя остановка:
+                    <input type="number" name="early_stop" value="100" required min="1">
+                </label>
+                <label value="Разбиение train/test (процент тестовых данных)">Разбиение train/test:
+                    <input type="number" name="train_test" value="0.25" required min="0.01" max="1" step="0.01">
+                </label>
+                <label value="learning rate">Скорость обучения:
+                    <input type="number" name="learning_rate" value="0.03" required step="0.01">
+                </label>
+                <label value="depth">Глубина модели:
+                    <input type="number" name="depth" value="6" required min="1" max="16">
+                </label>
+            {% endif %}
             <input type="hidden" name="model" value="{{ model.id }}">
             <input type="submit" name="continue" value="Продолжить" disabled>
             <input type="submit" name="continue" value="Сохранить и закрыть">
         </form>
     {% endif %}
-{#    <input type="submit" value="Список процессов">#}
-{#    <input type="submit" value="Продолжить обучение">#}
-{#    <p>Список типовых позиций и специализаций:</p>#}
-{#    <form action="nnnn" method="post">#}
-{#        <select name="profession">#}
-{#                <option>Позиция 1</option>#}
-{#                <option>Позиция 2</option>#}
-{#                <option>Позиция 3</option>#}
-{#        </select>#}
-{#        <input type="submit" value="Выбрать">#}
-{#    </form>#}
-{#    <form action="nnnn" method="get">#}
-{#        <input type="submit" value="Вернуться назад">#}
-{#    </form>#}
-{##}
-{##}
-{#    <p class="text-info-main">Выберите слепок данных:</p>#}
-{##}
-{#    <form action="new-data" method="post">#}
-{#        <select name="data">#}
-{#                <option>Данные 1</option>#}
-{#                <option>Данные 2</option>#}
-{#                <option>Данные 3</option>#}
-{#        </select>#}
-{#        <input type="submit" value="Выбрать">#}
-{#    </form>#}
-{#    <p class="text-info-main">Или загрузите новый слепок данных:</p>#}
-{#    <input type="file" name="file" required/>#}
-{#    <input type="submit" value="Загрузить данные">#}
-{#    <input type="submit" value="Проверить данные">#}
-{##}
-{#    <p class="text-info-main">Выберите метод моделирования:</p>#}
-{##}
-{#    <form action="new-data" method="post">#}
-{#        <select name="data">#}
-{#                <option>Метод 1</option>#}
-{#                <option>Метод 2</option>#}
-{#                <option>Метод 3</option>#}
-{#        </select>#}
-{#        <input type="submit" value="Сохранить">#}
-{#    </form>#}
-{#    <input type="submit" value="Вернуться назад">#}
-{#    <p>Выберите параметры модели:</p>#}
-{#    <p>Профессия:</p>#}
-{#    <p>{{ profession }}</p>#}
-{#    <p>Модель:</p>#}
-{#    <p>{{ model }}</p>#}
-{#    <form action="/upload-dataset" method="post" enctype="multipart/form-data">#}
-{#        <input type="hidden" name="profession" value="{{ profession }}">#}
-{#        <input type="hidden" name="model" value="{{ model }}">#}
-{#        <label value="Количество эпох">#}
-{#            <p>Количество эпох:</p>#}
-{#            <input type="number" name="epochs" value="1000" required min="1">#}
-{#        </label>#}
-{#        <label value="Ранняя остановка">#}
-{#            <p>Ранняя остановка:</p>#}
-{#            <input type="number" name="early_stop" value="100" required min="1">#}
-{#        </label>#}
-{#        <label value="Разбиение train/test (процент тестовых данных)">#}
-{#            <p>Разбиение train/test:</p>#}
-{#            <input type="number" name="train_test" value="0.25" required min="0.01" max="1" step="0.01">#}
-{#        </label>#}
-{#        <label value="learning rate">#}
-{#            <p>Скорость обучения:</p>#}
-{#            <input type="number" name="learning_rate" value="0.03" required step="0.01">#}
-{#        </label>#}
-{#        <label value="depth">#}
-{#            <p>Глубина модели:</p>#}
-{#            <input type="number" name="depth" value="6" required min="1" max="16">#}
-{#        </label>#}
-{#        <input type="file" name="file" required/>#}
-{#        <input type="submit" value="Обучить модель">#}
-{#    </form>#}
 {##}
 {#    <p class="text-info-main">Выберите параметры конфигурации Виртуальной машины для обучения модели:</p>#}
 {#    <label value="param1">#}

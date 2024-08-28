@@ -1,10 +1,9 @@
 import re
-from typing import Literal
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from domain import db, User, ModelMeta, ModelMethod
+from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam
 from utilities.model_utils import *
-from utilities.train_model import train_catboost
+from utilities.train_model import train_catboost, add_model_hyperparams
 from utilities.send_email import send_email_assync
 
 app = Flask(__name__)
@@ -194,6 +193,27 @@ def model_creation_page(state: int = None):
         model: ModelMeta = ModelMeta.query.get(int(request.form.get('model')))
         method: ModelMethod = ModelMethod.query.filter_by(name=request.form.get('model_method')).first()
         model.method = method.id
+        model.state = state - 1  # состояние модели = 1
+        db.session.commit()
+        model_continue = request.form.get('continue')
+        if model_continue == 'Продолжить':
+            return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
+                                   get_prof_name=get_prof_name, method=method.name)
+        all_models = ModelMeta.query.all()
+        return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
+                               get_prof_name=get_prof_name, saved=1)
+    elif state == 3:  # обработка выбора гиперпараметров модели
+        model_id = int(request.form.get('model'))
+        model: ModelMeta = ModelMeta.query.get(model_id)
+        method: ModelMethod = ModelMethod.query.filter_by(id=model.method).first()
+        if method.name == 'CatBoostRegressor':
+            add_model_hyperparams(db, model_id,
+                                  ('epochs', request.form.get('epochs')),
+                                  ('early_stop', request.form.get('early_stop')),
+                                  ('train_test', request.form.get('train_test').replace(',', '.', 1)),
+                                  ('learning_rate', request.form.get('learning_rate').replace(',', '.', 1)),
+                                  ('depth', request.form.get('depth')))
+        model.state = state - 1  # состояние модели = 2
         db.session.commit()
         model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':
@@ -203,19 +223,28 @@ def model_creation_page(state: int = None):
                                get_prof_name=get_prof_name, saved=1)
 
 
-@app.route('/new_model_continue/<int:model_id>/<int:step>', methods=[GET, POST])
+@app.route('/new_model_continue/<int:model_id>/<int:state>', methods=[GET, POST])
 @login_required
-def continue_with_model(model_id: int, step: Literal[0, 1]):
+def continue_with_model(model_id: int, state: int):
     """Продолжение создания модели
     :param model_id: id модели из БД, которую меняем на определённом шаге
-    :param step: 0 - меняем предыдущий этап создания модели (кнопка "Назад" на страницах), 1 - переход на следующий этап
-    незавершённой модели (нажатие на ссылку модели из списка всех моделей)
+    :param state: этап создания модели
     """
     user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
-    state = (model := ModelMeta.query.get(model_id)).state + step
-    if state in (0, 1):  # создана запись о модели в БД (название/автор/дата/описание/типовая позиция)
+    model = ModelMeta.query.get(model_id)
+    if state == 0:  # ещё нет записи о таблицы
+        return render_template('new_model.html', name=user_name, surname=user_surname, get_prof_name=get_prof_name,
+                               state=state, model=model)
+    elif state == 1:  # создана запись о модели в БД (название/автор/дата/описание/типовая позиция)
+        allowed = any(ModelHyperparam.query.filter_by(model_id=model_id))  # выбраны гиперпараметры? нельзя менять метод
+        method: ModelMethod = ModelMethod.query.filter_by(id=model.method).first()
+        method = method.name if method else None
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
-                               get_prof_name=get_prof_name, state=state)
+                               get_prof_name=get_prof_name, state=state, method_change_allowed=allowed, method=method)
+    elif state == 2:  # выбран метод моделирования
+        method: ModelMethod = ModelMethod.query.filter_by(id=model.method).first().name
+        return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
+                               state=state, get_prof_name=get_prof_name, method=method)
 
 
 @app.route('/loading', methods=[GET])
