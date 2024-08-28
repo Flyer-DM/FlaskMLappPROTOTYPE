@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Страница для создания новой модели</title>
+    <link rel="stylesheet" type="text/css" href="/static/styles/general.css" />
+    <link rel="stylesheet" type="text/css" href="/static/styles/new_model.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous"/>
+</head>
+<body>
+<form action="/logout" method="get">
+    <div id="logout-form">
+        <input type="submit" id="logout-button" value="Выйти">
+        <p>{{ name }}</p>
+        <p>{{ surname }}</p>
+    </div>
+</form>
+<div class="d-flex flex-column align-items-center">
+    <form action="/index" method="get">
+        <input type="submit" value="На главную">
+    </form>
+    
+    {% if show_table %}
+    <div class="container">
+        <label for="modelsTable">Незавершённые модели:</label>
+        <table id="modelsTable" class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Название модели</th>
+                    <th>ТП</th>
+                    <th>Автор</th>
+                    <th>Дата создания</th>
+                    <th>Метод</th>
+                    <th>Описание модели</th>
+                    <th>Последнее изменение и пользователь</th>
+                    <th>Статус модели</th>
+                    <th>Переобучена раз</th>
+                    <th>Метод моделирования</th>
+                    <th>Использование в калькуляторе</th>
+                    <th>Сколько раз была переобучена</th>
+                    <th>Ссылка на оригинал модели, если копия</th>
+                    <th>Финализация модели</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for model in all_models %}
+                <tr>
+                    <td><a href="/incomplete_model/{{ model.id }}"><b>"{{ model.name }}"</b></a></td>
+                    <td><b>{{ get_prof_name(model.profession) if model.profession else 'не указана' }}</b></td>
+                    <td><b>{{ model.author_id.last_name }} {{ model.author_id.first_name }}</b></td>
+                    <td><b>{{ model.creation_on }}</b></td>
+                    <td><b>{{ model.method_id.name if model.method_id.name else 'не указан' }}</b></td>
+                    <td><b>{{ model.description }}</b></td>
+                    <td><b>{{ model.updated_on }}</b>, <b>{{ model.last_changed_user.last_name }} {{ model.last_changed_user.first_name }}</b></td>
+                    <td>
+                        <b>
+                        {% if model.state == 0 %}
+                            Создана запись о модели в БД
+                        {% elif model.state == 1 %}
+                            Выбран метод моделирования
+                        {% elif model.state == 2 %}
+                            Выбраны гиперпараметры метода моделирования
+                        {% elif model.state == 3 %}
+                            Модель обучена
+                        {% elif model.state == 4 %}
+                            Скорректированы отрицательные значения
+                        {% elif model.state == 5 %}
+                            Модель финализирована
+                        {% elif model.state == 6 %}
+                            Модель используется
+                        {% else %}
+                            Неизвестный статус
+                        {% endif %}
+                        </b>
+                    </td>
+                    <td><b>{{ model.retrained }}</b></td>
+                    <td><b>{{ model.method }}</b></td>
+                    <td><b>{{ model.used }}</b></td>
+                    <td><b>{{ model.retrained }}</b></td>
+                    <td><b>{{ model.orig }}</b></td>
+                    <td><b>{{ model.finalized }}</b></td>
+                    <td>
+                        <form action="/delete_model/{{ model.id }}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Вы уверены, что хотите удалить эту модель?');">
+                                Удалить
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="container">
+        <h2>Детали модели "{{ model.name }}"</h2>
+        <p><strong>ТП:</strong> {{ get_prof_name(model.profession) if model.profession else 'не указана' }}</p>
+        <p><strong>Автор:</strong> {{ model.author_id.last_name }} {{ model.author_id.first_name }}</p>
+        <p><strong>Дата создания:</strong> {{ model.creation_on }}</p>
+        <p><strong>Метод:</strong> {{ model.method_id.name if model.method_id.name else 'не указан' }}</p>
+        <p><strong>Описание:</strong> {{ model.description }}</p>
+        <p><strong>Последнее изменение:</strong> {{ model.updated_on }}, {{ model.last_changed_user.last_name }} {{ model.last_changed_user.first_name }}</p>
+        <p><strong>Статус:</strong>
+            {% if model.state == 0 %}
+                Создана запись о модели в БД
+            {% elif model.state == 1 %}
+                Выбран метод моделирования
+            {% elif model.state == 2 %}
+                Выбраны гиперпараметры метода моделирования
+            {% elif model.state == 3 %}
+                Модель обучена
+            {% elif model.state == 4 %}
+                Скорректированы отрицательные значения
+            {% elif model.state == 5 %}
+                Модель финализирована
+            {% elif model.state == 6 %}
+                Модель используется
+            {% else %}
+                Неизвестный статус
+            {% endif %}
+        </p>
+        <p><strong>Переобучена раз:</strong> {{ model.retrained }}</p>
+        <p><strong>Метод моделирования:</strong> {{ model.method }}</p>
+        <p><strong>Использование в калькуляторе:</strong> {{ model.used }}</p>
+        <p><strong>Ссылка на оригинал модели, если копия:</strong> {{ model.orig }}</p>
+        <p><strong>Финализация модели:</strong> {{ model.finalized }}</p>
+        <a href="/incomplete_model">Назад к списку моделей</a>
+    </div>
+    {% endif %}
+</div>
+
+</body>
+</html>
