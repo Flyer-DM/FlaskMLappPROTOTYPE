@@ -89,9 +89,30 @@ img {
     background-color: #fff;
     padding: 20px;
     border-radius: 5px;
-    max-width: 300px;
     margin: 0 auto;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-left: 10%;
+    margin-right: 10%;
+    max-width: 100%; 
+    overflow-y: auto; 
+    overflow-x: auto;
+}
+
+/* Выравнивание заголовков таблицы по центру горизонтально и вертикально */
+#modelsTable th {
+    text-align: center;          /* Горизонтальное выравнивание */
+    vertical-align: middle;      /* Вертикальное выравнивание */
+}
+
+/* Дополнительное стилизование для выравнивания высоты строк */
+#modelsTable {
+    border-collapse: collapse;   /* Убирает двойные границы между ячейками */
+    width: 100%;                 /* Ширина таблицы 100% от контейнера */
+}
+
+#modelsTable td, #modelsTable th {
+    padding: 8px;                /* Отступы внутри ячеек */
+    border: 1px solid #ddd;      /* Граница ячеек */
 }
 
 label {
