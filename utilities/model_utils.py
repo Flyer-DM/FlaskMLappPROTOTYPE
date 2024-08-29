@@ -6,6 +6,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from io import BytesIO
 from catboost import CatBoostRegressor
+from werkzeug.datastructures import FileStorage
+from sklearn.preprocessing import LabelEncoder
 
 MODELS_PATH = 'ml_models'
 DATASETS_PATH = 'datasets'
@@ -97,3 +99,34 @@ def get_prof_name(number: int) -> int:
     with open('datasets/professions_numbers.json', 'r', encoding='utf-8') as f:
         translate = json.load(f)
     return translate[str(number)]
+
+
+def validate_dataset(file: FileStorage) -> (str, bool):
+    """Валидация датасета для обучения"""
+    target = 'new_salary'
+    model_filters = ('is_vahta', 'experience_id', 'region_name', 'is_parttime')
+    try:  # проверка, что файл вообще открывается
+        data = pd.read_csv(file, index_col='id')
+        columns = data.columns
+        if target not in columns:  # проверка присутствия целевой переменной
+            return f"Отсутствует целевая переменная \"{target}\"", False
+        for column in model_filters:
+            if column not in columns:  # проверка присутствия базовых признаков
+                return f"Отсутствует признак \"{column}\"", False
+        try:  # проверка на базовое преобразование данных
+            data = data.drop(columns=['salary_from_rub', 'source_site', 'year', 'industry_group'], errors='ignore')
+            columns = data.columns
+            data = data.drop_duplicates(ignore_index=True)
+            data_len = len(data)
+            for column in columns:
+                if null_sum := data[column].isnull().sum() > data_len // 2:  # проверка, что немного пустых значений
+                    return f"Колонка {column} содержит слишком много пропущенных значений: {null_sum}", False
+            if data_len < 10_000:  # если записей недостаточно
+                return f"Данные для обучения недостаточно: {data_len}", False
+            for col in data.columns[data.dtypes == object]:  # проверка на возможность преобразование данных
+                data[col] = LabelEncoder().fit_transform(data[col].values)
+            return "Данные прошли проверку!", True
+        except Exception as e:
+            return f"Ошибка базового преобразования данных. Ошибка: {e}", False
+    except Exception as e:  # ошибка о тк
+        return f"Файл не считывается. Ошибка: {e}", False

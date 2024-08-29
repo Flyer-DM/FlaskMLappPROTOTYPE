@@ -74,25 +74,6 @@ def main():
     return render_template('main.html', name=current_user.first_name, surname=current_user.last_name)
 
 
-@app.route('/main', methods=[GET, POST])
-@login_required
-def models():
-    """
-    Страница со списком моделей
-    :return: загрузка html страницы c переданными параметрами
-    """
-    if request.method == GET:
-        dropdown_list = get_list_of_models()
-        return render_template('index.html', name=current_user.first_name, surname=current_user.last_name,
-                               dropdown_list=dropdown_list)
-    else:
-        profession = request.form.get('profession')
-        profession_num = get_prof_num(profession)
-        prof_models = get_prof_models(profession_num)
-        return render_template('index.html', name=current_user.first_name, surname=current_user.last_name,
-                               profession=profession, prof_models=prof_models)
-
-
 @app.route('/model-description', methods=[POST])
 @login_required
 def model_description():
@@ -113,39 +94,21 @@ def model_description():
                            profession=profession, lp=learning_plot, ip=importance_plot, **kwargs)
 
 
-@app.route('/new-model', methods=[GET, POST])
-@login_required
-def new_model():
-    """
-    Страница выбора профессии и модели
-    :return: загрузка html страницы c переданными параметрами
-    """
-    dropdown_list = get_list_of_professions()
-    if request.method == GET:
-        return render_template('new_model.html', name=current_user.first_name, surname=current_user.last_name,
-                               dropdown_list=dropdown_list)
-    if request.method == POST:
-        profession = request.form.get('profession')
-        model_type = request.form.get('model')
-        return render_template('new_model.html', name=current_user.first_name, surname=current_user.last_name,
-                               profession=profession, model=model_type)
-
-
 @app.route('/upload-dataset', methods=[POST])
 @login_required
-def new_model_train():
+def upload_dataset():
     """
     Главная страница после сохранения версии модели
     :return: загрузка html страницы c переданными параметрами
     """
+    user_name, user_surname = current_user.first_name, current_user.last_name
     model: ModelMeta = ModelMeta.query.get(int(request.form.get('model')))
-    method: ModelMethod = ModelMethod.query.filter_by(id=model.method).first()
-    file = request.files['file']
-
-    # if model_type == 'CatboostRegressor':
-    #     train_catboost(file, profession_num, epochs, early_stop, train_test, learning_rate, depth)
-    # return render_template('index.html', name=current_user.first_name, surname=current_user.last_name,
-    #                        dropdown_list=dropdown_list, new_model=True)
+    dataset = request.files['file']
+    e, valid = validate_dataset(dataset)
+    if not valid:
+        return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, e=e)
+    return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, valid=valid,
+                           dataset=dataset)
 
 
 @app.route('/new_model_page', methods=[GET, POST])

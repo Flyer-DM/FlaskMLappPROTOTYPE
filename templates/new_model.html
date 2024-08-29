@@ -194,15 +194,30 @@
         <form action="/new_model_continue/{{ model.id }}/2" method="get">
             <input type="submit" value="Шаг назад">
         </form>
-        <p>Загрузить свой датасет</p>
-        <form action="/upload-dataset" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" />
-            <input type="submit" value="Проверить корректность данных" disabled>
-            <input type="hidden" name="model" value="{{ model.id }}">
-        </form>
-        <h2>Или</h2>
-        <p>Выбрать из готовых слепков данных</p>
-        <p>В РАЗРАБОТКЕ...</p>
+        {% if valid is undefined %}
+            {% if e is defined %}
+                <p>Данные НЕ прошли проверку!</p>
+                <p>Ошибка:<strong>{{ e }}</strong></p>
+            {% endif %}
+            <p>Загрузить свой датасет (csv)</p>
+            <form action="/upload-dataset" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".csv"/>
+                <input type="submit" value="Проверить корректность данных">
+                <input type="hidden" name="model" value="{{ model.id }}">
+            </form>
+            <h2>Или</h2>
+            <p>Выбрать из готовых слепков данных</p>
+            <p>В РАЗРАБОТКЕ...</p>
+        {% elif valid is defined %}
+            <p>Данные прошли проверку!</p>
+            <form action="#" method="post">
+                <p>Сохранить данные в виде слепка?</p>
+                <input type="submit" value="Да" disabled>
+                <input type="submit" value="Нет" disabled>
+                <input type="hidden" name="profession" value="{{ model.profession }}">
+                <input type="hidden" name="dataset" value="{{ dataset }}">
+            </form>
+        {% endif %}
     {% endif %}
 </div>
 </body>
