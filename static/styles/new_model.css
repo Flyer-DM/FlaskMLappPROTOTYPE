@@ -174,3 +174,17 @@ input[name="model_name"], #model_description, #author {
 li>a {
     text-decoration: none;
 }
+
+.cut-descr-td {
+    display: table-cell;
+    max-width: 180px;
+}
+
+.cut-description {
+    display: block;
+    width: 160px;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 3;
+    white-space: nowrap;
+    overflow: hidden;
+}
