@@ -291,6 +291,43 @@ def continue_with_model(model_id: int, state: int):
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state)
 
 
+@app.route('/copy_unfinished_model', methods=[GET, POST])
+@login_required
+def copy_unfinished_model():
+    """Копирование незавершённой модели с новыми данными"""
+    user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
+    if request.method == GET:
+        all_models = ModelMeta.query.all()  
+        return render_template('copy_unfinished_model.html', name=user_name, surname=user_surname,
+                               all_models=all_models)
+    if request.method == POST:
+        model_id = request.form.get('model')
+        # Создаем копию модели
+        original_model = ModelMeta.query.get(model_id)
+        new_model = ModelMeta(
+            name=original_model.name + " (копия)",
+            description=original_model.description,
+            author=user_id,
+            last_changed=user_id,
+            profession=original_model.profession,
+            method=original_model.method,
+            state=original_model.state,
+            orig=original_model.id
+        )
+        db.session.add(new_model)
+        # Создаём копию гиперпараметров
+        model_hyperparams = ModelHyperparam.query.filter_by(model_id=model_id)
+        for param in model_hyperparams:
+            new_param = ModelHyperparam(
+                model_id=new_model.id,
+                name=param.name,
+                value=param.value
+            )
+            db.session.add(new_param)
+        db.session.commit()
+        return redirect('/index')
+
+
 @app.route('/loading', methods=[GET])
 @login_required
 def loading_page():
@@ -303,13 +340,6 @@ def loading_page():
 def test_new_model():
     """Тестирование новой модели"""
     return render_template('test_new_model.html', name=current_user.first_name, surname=current_user.last_name)
-
-
-@app.route('/copy_unfinished_model', methods=[GET])
-@login_required
-def copy_unfinished_model():
-    """Копирование модели"""
-    return render_template('copy_unfinished_model.html', name=current_user.first_name, surname=current_user.last_name)
 
 
 @app.route('/model_for_use', methods=[GET])
