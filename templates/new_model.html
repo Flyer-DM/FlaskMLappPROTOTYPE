@@ -267,30 +267,67 @@
             <input type="submit" value="Шаг назад">
         </form>
         <h2>Настройка фильтров для обучения</h2>
-        <form action="/set-model-params/{{ model.id }}" method="post">
-            <label>Вахта<br>
-                <input type="radio" name="is_vahta" value="0" checked>Нет<br>
-                <input type="radio" name="is_vahta" value="1">Да<br>
-            </label>
-            <label>Частичная занятость<br>
-                <input type="radio" name="is_parttime" value="0" checked>Нет<br>
-                <input type="radio" name="is_parttime" value="1">Да<br>
-            </label>
-            <label>Уровень опыта<br>
-                <input type="radio" name="experience_id" value="0" checked>Нет<br>
-                <input type="radio" name="experience_id" value="1">Низкий<br>
-                <input type="radio" name="experience_id" value="2">Высокий<br>
-            </label>
-            <label>Регион
-                <select name="region_name">
-                    {% for region in regions %}
-                        <option value="{{ region }}">{{ region }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <br>
-            <input type="submit" value="Сохранить">
-        </form>
+        <div class="form-container">
+            <form action="/set-model-params/{{ model.id }}" method="post">
+                <div class="radio-group">
+                    <p class="label">Вахта</p>
+                    <label class="radio-container">
+                        <input type="radio" name="is_vahta" value="0" checked>
+                        <span class="radio-checkmark"></span>
+                        Нет
+                    </label>
+                    <label class="radio-container">
+                        <input type="radio" name="is_vahta" value="1">
+                        <span class="radio-checkmark"></span>
+                        Да
+                    </label>
+                </div>
+    
+                <div class="radio-group">
+                    <p class="label">Частичная занятость</p>
+                    <label class="radio-container">
+                        <input type="radio" name="is_parttime" value="0" checked>
+                        <span class="radio-checkmark"></span>
+                        Нет
+                    </label>
+                    <label class="radio-container">
+                        <input type="radio" name="is_parttime" value="1">
+                        <span class="radio-checkmark"></span>
+                        Да
+                    </label>
+                </div>
+    
+                <div class="radio-group">
+                    <p class="label">Уровень опыта</p>
+                    <label class="radio-container">
+                        <input type="radio" name="experience_id" value="0" checked>
+                        <span class="radio-checkmark"></span>
+                        Нет
+                    </label>
+                    <label class="radio-container">
+                        <input type="radio" name="experience_id" value="1">
+                        <span class="radio-checkmark"></span>
+                        Низкий
+                    </label>
+                    <label class="radio-container">
+                        <input type="radio" name="experience_id" value="2">
+                        <span class="radio-checkmark"></span>
+                        Высокий
+                    </label>
+                </div>
+    
+                <div class="select-group">
+                    <p class="label">Регион</p>
+                    <select name="region_name">
+                        {% for region in regions %}
+                            <option value="{{ region }}">{{ region }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+    
+                <input type="submit" class="submit-button" value="Сохранить">
+            </form>
+        </div>
     {% elif state == 5 %}
         <h2>Запуск обучения модели: {{ model.name }}</h2>
         <form action="/new_model_page" method="get">
