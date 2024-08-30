@@ -170,6 +170,8 @@ def save_uploaded_dataset(dataset: pd.DataFrame, profession: int) -> str:
         table_name = f"data_{profession}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         new_table = Table(table_name, metadata, *columns)
         metadata.create_all(engine)
+        dataset.columns = [col.translate(str.maketrans(translit_dict)) for col in dataset.columns]
+        dataset.to_sql(table_name, engine, if_exists='append', index=False)
         return f"Таблица {table_name} успешно создана!"
     except Exception as e:
         return f"Ошибка при создании таблицы: {e}"

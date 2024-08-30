@@ -17,6 +17,9 @@
     </div>
 </form>
 <div class="d-flex flex-column align-items-center">
+    {% if train == 'started' %}
+        <p>Запущен процесс обучения модели</p>
+    {% endif %}
     <form action="/new_model_page" method="get">
         <input type="submit" class="button-1" value="Создать новую модель">
     </form>

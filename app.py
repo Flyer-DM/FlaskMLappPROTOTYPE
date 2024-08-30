@@ -6,7 +6,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam, ModelParam
 from utilities.model_utils import *
 from utilities.file_utils import cleanup
-from utilities.train_model import train_catboost, add_model_hyperparams, get_catboost_hyperparams
+from utilities.train_model import train_model, add_model_hyperparams, get_catboost_hyperparams
 from utilities.send_email import send_email_assync
 
 app = Flask(__name__)
@@ -136,7 +136,7 @@ def save_upload_data():
             os.remove(temp_file)  # Удаляем временный файл
         all_datas = get_all_data_tables(model.profession)
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, saved=True,
-                               save_result=result, all_datas=all_datas)
+                               get_prof_name=get_prof_name, save_result=result, all_datas=all_datas)
     if temp_file and os.path.exists(temp_file):
         os.remove(temp_file)  # Удаляем временный файл
     return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, saved=False,
@@ -277,8 +277,9 @@ def set_data_table_for_model(model_id: int, table_name: str):  # state = 4 (со
     model.state = 3
     model.last_changed = user_id
     db.session.commit()
+    regions = chain.from_iterable(pd.read_csv('./datasets/regions.csv', usecols=['region_name']).values.tolist())
     return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
-                           get_prof_name=get_prof_name, state=model.state + 1)
+                           get_prof_name=get_prof_name, state=model.state + 1, regions=list(regions))
 
 
 @app.route('/set-model-params/<int:model_id>', methods=[POST])
@@ -304,8 +305,12 @@ def set_params_for_model(model_id: int):  # state = 5 (установка пар
 @login_required
 def teach_model(model_id: int):
     """Запуск обучения модели"""
-    # ...
-    return render_template('main.html', name=current_user.first_name, surname=current_user.last_name)
+    model: ModelMeta = ModelMeta.query.get(model_id)
+    model.state = 5
+    model.retrained += 1
+    db.session.commit()
+    train_model(model_id)
+    return render_template('main.html', name=current_user.first_name, surname=current_user.last_name, train='started')
 
 
 @app.route('/incomplete_model', methods=[GET])
@@ -330,19 +335,12 @@ def incomplete_model(model_id: int = None):
 def delete_model(model_id: int):
     """Удаление модели и связанных записей"""
     try:
-        # Удаление всех связанных записей в model_hyperparam
-        ModelHyperparam.query.filter_by(model_id=model_id).delete()
-        # Удаление самой модели
         model = db.session.get(ModelMeta, model_id)
-        if model:
-            db.session.delete(model)
-            db.session.commit()
-            flash('Модель успешно удалена', 'success')
-        else:
-            flash('Модель не найдена', 'error')
+        db.session.delete(model)
+        db.session.commit()
     except Exception as e:
+        print(f'Ошибка удаления: {e}')
         db.session.rollback()
-        flash(f'Ошибка при удалении модели: {str(e)}', 'error')
     return redirect(url_for('incomplete_model'))
 
 
@@ -367,6 +365,8 @@ def copy_unfinished_model():
             profession=original_model.profession,
             method=original_model.method,
             state=original_model.state,
+            train_table=original_model.train_table,
+            model_file=original_model.model_file,
             orig=original_model.id
         )
         db.session.add(new_model)
@@ -377,6 +377,17 @@ def copy_unfinished_model():
                 model_id=new_model.id,
                 name=param.name,
                 value=param.value
+            )
+            db.session.add(new_param)
+        # Создаём копию параметров
+        param = ModelParam.query.filter_by(model_id=model_id).first()
+        if param:
+            new_param = ModelParam(
+                model_id=new_model.id,
+                is_vahta=param.is_vahta,
+                is_parttime=param.is_parttime,
+                experience_id=param.experience_id,
+                region_name=param.region_name,
             )
             db.session.add(new_param)
         db.session.commit()

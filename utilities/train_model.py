@@ -1,18 +1,18 @@
+# import threading
 from utilities.model_utils import *
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from datetime import datetime
-from werkzeug.datastructures import FileStorage
 from flask_sqlalchemy.extension import SQLAlchemy
-from domain import ModelHyperparam
+from sqlalchemy import create_engine, text
+from domain import ModelMeta, ModelMethod, ModelHyperparam, ModelParam
 
 
-def train_catboost(dataset_name: FileStorage, profession_num: int,
-                   epochs: int, early_stop: int, train_test: float, learning_rate: float, depth: int):
-    data = pd.read_csv(dataset_name, index_col='id')
+def train_catboost(data: pd.DataFrame, profession_num: int,
+                   epochs: int, early_stop: int, train_test: float, learning_rate: float, depth: int) -> str:
     target = 'new_salary'
 
-    data = data.drop(columns=['salary_from_rub'], errors='ignore')
+    data = data.drop(columns=['id', 'salary_from_rub', 'source_site'], errors='ignore')
 
     categorical_columns = []
     for col in data.columns[data.dtypes == object]:
@@ -20,9 +20,6 @@ def train_catboost(dataset_name: FileStorage, profession_num: int,
         categorical_columns.append(col)
     features = [col for col in data.columns if col not in [target]]
     cat_idxs = [i for i, f in enumerate(features) if f in categorical_columns]
-
-    for col in data.columns[data.dtypes == bool]:
-        data[col] = data[col].astype(int)
 
     model = CatBoostRegressor(allow_writing_files=False, iterations=epochs, loss_function='RMSE', depth=depth,
                               early_stopping_rounds=early_stop, learning_rate=learning_rate)
@@ -43,10 +40,35 @@ def train_catboost(dataset_name: FileStorage, profession_num: int,
     date_version = datetime.now().strftime('%Y%m%d%H%M%S')
     path = f'{MODELS_PATH}/{profession_num}'
     if os.path.exists(path):
-        model.save_model(f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
+        model.save_model(filename := f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
     else:
         os.mkdir(path)
-        model.save_model(f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
+        model.save_model(filename := f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
+    return filename
+
+
+def train_model(model_id: int):
+    engine = create_engine(open('./interface_db.txt', 'r').read())
+    model: ModelMeta = ModelMeta.query.get(model_id)
+    param: ModelParam = ModelParam.query.filter_by(model_id=model_id).first()
+    query = text(f"SELECT * FROM {model.train_table} WHERE is_vahta = '{param.is_vahta}' AND "
+                 f"is_parttime = '{param.is_parttime}' AND experience_id = '{param.experience_id}' AND "
+                 f"region_name = '{param.region_name}'")
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        df = pd.DataFrame(result.fetchall(), columns=result.keys())
+    if ModelMethod.query.filter_by(id=model.method).first().name == 'CatBoostRegressor':
+        train_catboost(df, model.profession,
+                       int(ModelHyperparam.query.filter_by(model_id=model_id, name='epochs').first().value),
+                       int(ModelHyperparam.query.filter_by(model_id=model_id, name='early_stop').first().value),
+                       float(ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value),
+                       float(ModelHyperparam.query.filter_by(model_id=model_id, name='learning_rate').first().value),
+                       int(ModelHyperparam.query.filter_by(model_id=model_id, name='depth').first().value))
+
+
+# def train_model_assync(model_id: int):
+#     thread = threading.Thread(target=train_model, args=(model_id, ))
+#     thread.start()
 
 
 def add_model_hyperparams(db: SQLAlchemy, model_id: int, *params) -> None:
