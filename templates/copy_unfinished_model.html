@@ -23,30 +23,32 @@
 
     <p class="text-info-main">Список незавершенных моделей:</p>
 
-    <form action="new-model" method="post">
-        <select name="model">
-                <option>CatboostRegressor</option>
+    <form action="/copy_unfinished_model" method="post">
+        <label for="model">Выберите модель:</label>
+        <select name="model" id="model">
+            {% for model in all_models %}
+            <option value="{{ model.id }}">{{ model.name }}</option>
+            {% endfor %}
         </select>
-        <input type="submit" value="Выбрать">
+        <input type="submit" value="Скопировать модель">
     </form>
 
     <p class="text-info-main">Выберите слепок данных:</p>
 
-    <form action="new-data" method="post">
+    <form action="/copy_unfinished_model" method="post">
         <select name="data">
-                <option>Данные 1</option>
-                <option>Данные 2</option>
-                <option>Данные 3</option>
+            <option value="data1">Данные 1</option>
+            <option value="data2">Данные 2</option>
+            <option value="data3">Данные 3</option>
         </select>
         <input type="submit" value="Выбрать">
     </form>
-    <p class="text-info-main">Или загрузите новый слепок данных:</p>
-    <input type="file" name="file" required/>
 
-    <form action="/index" method="get">
-        <input type="submit" value="Скачать копию и выйти">
+    <p class="text-info-main">Или загрузите новый слепок данных:</p>
+    <form action="/copy_unfinished_model" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required />
+        <input type="submit" value="Скопировать модель с загруженными данными">
     </form>
-        
 </div>
 </body>
 </html>
