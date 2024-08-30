@@ -214,7 +214,7 @@
             <p>Загрузить свой датасет (csv)</p>
             <form action="/upload-dataset" method="post" enctype="multipart/form-data">
                 <input type="file" name="file" accept=".csv"/>
-                <input type="submit" value="Проверить корректность данных">
+                <input type="submit" value="Проверить корректность данных" class="dont_work">
                 <input type="hidden" name="model" value="{{ model.id }}">
             </form>
             <h2>Или</h2>
