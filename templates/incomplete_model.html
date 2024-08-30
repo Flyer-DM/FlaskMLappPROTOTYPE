@@ -69,7 +69,13 @@
                         </b>
                     </td>
                     <td><b>{{ model.retrained }}</b></td>
-                    <td><b>{{ model.orig if model.orig else '' }}</b></td>
+                    <td>
+                        {% if model.orig %}
+                            <a href="/incomplete_model/{{ model.orig }}" title="Подробное описание оригинала">
+                                <b>описание</b>
+                            </a>
+                        {% endif %}
+                    </td>
                     <td>
                         <form action="/delete_model/{{ model.id }}" method="post" style="display:inline;">
                             <button type="submit" class="btn btn-danger" onclick="return confirm('Вы уверены, что хотите удалить эту модель?');">
@@ -118,7 +124,7 @@
         <p><strong>Переобучена раз:</strong> {{ model.retrained }}</p>
         <p><strong>Использование в калькуляторе:</strong> {{ 'Да' if model.used else 'Нет' }}</p>
         {% if model.orig %}
-            <p><strong>Оригинал модели:</strong><a href="/incomplete_model/{{ model.orig }}"></a></p>
+            <p><strong>Оригинал модели: </strong><a href="/incomplete_model/{{ model.orig }}">Описание</a></p>
         {% else %}
             <p><strong>Модель является оригиналом</strong></p>
         {% endif %}
