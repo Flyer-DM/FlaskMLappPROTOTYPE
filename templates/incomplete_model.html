@@ -2,7 +2,11 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Страница для создания новой модели</title>
+    {% if model is defined %}
+        <title>Описание модели {{ model.name }}</title>
+    {% else %}
+        <title>Список незавершённых моделей</title>
+    {% endif %}
     <link rel="stylesheet" type="text/css" href="/static/styles/general.css" />
     <link rel="stylesheet" type="text/css" href="/static/styles/new_model.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -41,7 +45,7 @@
             <tbody>
                 {% for model in all_models %}
                 <tr>
-                    <td><a href="/incomplete_model/{{ model.id }}" title="Подробное описание"><b>"{{ model.name }}"</b></a></td>
+                    <td><a href="/incomplete_model/{{ model.id }}" title="Подробное описание"><b>{{ model.name }}</b></a></td>
                     <td><b>{{ get_prof_name(model.profession) if model.profession else 'не указана' }}</b></td>
                     <td><b>{{ model.author_id.last_name }} {{ model.author_id.first_name }}</b></td>
                     <td><b>{{ model.creation_on.strftime('%Y.%m.%d %H:%M:%S') }}</b></td>
@@ -56,12 +60,16 @@
                         {% elif model.state == 2 %}
                             Выбраны гиперпараметры метода моделирования
                         {% elif model.state == 3 %}
-                            Модель обучена
+                            Выбран слепок данных для модели
                         {% elif model.state == 4 %}
-                            Скорректированы отрицательные значения
+                            Установлены параметры (фильтры) модели
                         {% elif model.state == 5 %}
-                            Модель финализирована
+                            Модель обучена
                         {% elif model.state == 6 %}
+                            Скорректированы отрицательные значения
+                        {% elif model.state == 7 %}
+                            Модель финализирована
+                        {% elif model.state == 8 %}
                             Модель используется
                         {% else %}
                             Неизвестный статус
@@ -110,12 +118,16 @@
             {% elif model.state == 2 %}
                 Выбраны гиперпараметры метода моделирования
             {% elif model.state == 3 %}
-                Модель обучена
+                Выбран слепок данных для модели
             {% elif model.state == 4 %}
-                Скорректированы отрицательные значения
+                Установлены параметры (фильтры) модели
             {% elif model.state == 5 %}
-                Модель финализирована
+                Модель обучена
             {% elif model.state == 6 %}
+                Скорректированы отрицательные значения
+            {% elif model.state == 7 %}
+                Модель финализирована
+            {% elif model.state == 8 %}
                 Модель используется
             {% else %}
                 Неизвестный статус
@@ -130,10 +142,10 @@
         {% endif %}
         <p><strong>Финализация модели:</strong> {{ 'Да' if model.finalized else 'Нет' }}</p>
         {% if model.train_table %}
-            <p><strong>Имя таблицы для обучения:</strong>{{ model.train_table }}</p>
+            <p><strong>Имя таблицы для обучения: </strong>{{ model.train_table }}</p>
         {% endif %}
         {% if model.model_file %}
-            <p><strong>Имя файла модели:</strong>{{ model.model_file }}</p>
+            <p><strong>Имя файла модели: </strong>{{ model.model_file }}</p>
         {% endif %}
         <p><strong>Описание:</strong> {{ model.description }}</p>
         {% if hyperparams %}
@@ -141,6 +153,13 @@
             {% for param in hyperparams %}
                 <p><i>{{ param.name }}=</i>{{ param.value }}</p>
             {% endfor %}
+        {% endif %}
+        {% if params %}
+            <p><strong>Параметры:</strong></p>
+            <p><i>Вахта=</i>{{ params.is_vahta }}</p>
+            <p><i>Частичная занятость=</i>{{ params.is_parttime }}</p>
+            <p><i>Уровень опыта=</i>{{ params.experience_id }}</p>
+            <p><i>Регион=</i>{{ params.region_name }}</p>
         {% endif %}
     </div>
     {% endif %}

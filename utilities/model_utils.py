@@ -12,7 +12,7 @@ from werkzeug.datastructures import FileStorage
 from sklearn.preprocessing import LabelEncoder
 from sqlalchemy import Integer, Float, String, Boolean, DateTime
 from sqlalchemy import Column, Table, MetaData
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 
 MODELS_PATH = 'ml_models'
 DATASETS_PATH = 'datasets'
@@ -173,3 +173,11 @@ def save_uploaded_dataset(dataset: pd.DataFrame, profession: int) -> str:
         return f"Таблица {table_name} успешно создана!"
     except Exception as e:
         return f"Ошибка при создании таблицы: {e}"
+
+
+def get_all_data_tables(profession: int) -> list[str]:
+    """Получение списка всех доступных слепков данных по номеру типовой профессии"""
+    data_tables = f'data_{profession}'
+    all_datas = inspect(create_engine(open('./interface_db.txt', 'r').read())).get_table_names()
+    all_datas = [table for table in all_datas if table.startswith(data_tables)]
+    return all_datas

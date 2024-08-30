@@ -51,7 +51,7 @@
                 <tbody>
                     {% for model in all_models %}
                     <tr>
-                        <td title="Продолжит создание"><a href="/new_model_continue/{{ model.id }}/{{ model.state + 1 }}"><b>"{{ model.name }}"</b></a></td>
+                        <td title="Продолжит создание"><a href="/new_model_continue/{{ model.id }}/{{ model.state + 1 }}"><b>{{ model.name }}</b></a></td>
                         <td><b>{{ get_prof_name(model.profession) if model.profession else 'не указана' }}</b></td>
                         <td><b>{{ model.author_id.last_name }} {{ model.author_id.first_name }}</b></td>
                         <td><b>{{ model.creation_on.strftime('%Y.%m.%d %H:%M:%S') }}</b></td>
@@ -67,12 +67,16 @@
                             {% elif model.state == 2 %}
                                 Выбраны гиперпараметры метода моделирования
                             {% elif model.state == 3 %}
-                                Модель обучена
+                                Выбран слепок данных для модели
                             {% elif model.state == 4 %}
-                                Скорректированы отрицательные значения
+                                Установлены параметры (фильтры) модели
                             {% elif model.state == 5 %}
-                                Модель финализирована
+                                Модель обучена
                             {% elif model.state == 6 %}
+                                Скорректированы отрицательные значения
+                            {% elif model.state == 7 %}
+                                Модель финализирована
+                            {% elif model.state == 8 %}
                                 Модель используется
                             {% else %}
                                 Неизвестный статус
@@ -215,7 +219,35 @@
             </form>
             <h2>Или</h2>
             <p>Выбрать из готовых слепков данных</p>
-            <p>В РАЗРАБОТКЕ...</p>
+            {% if model.train_table %}
+                <p><strong>Выбранные данные: </strong>{{ model.train_table }}</p>
+                        <form action="/new_model_continue/{{ model.id }}/4" method="get">
+                            <input type="submit" value="Продолжить">
+                        </form>
+            {% endif %}
+            <label for="modelsTable">Слепки данных по типовой позиции: {{ get_prof_name(model.profession) }}</label>
+            <table id="modelsTable" class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Слепок</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in all_datas %}
+                        <tr>
+                            <td>{{ data }}</td>
+                            <td>
+                                {% if data != model.train_table %}
+                                <a href="/set-data-table/{{ model.id }}/{{ data }}"
+                                   title="Установить слепок данных для модели"
+                                   class="btn btn-success">Сохранить</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         {% elif valid is defined %}
             <p>Данные прошли проверку!</p>
             <form action="/save-uploaded-dataset" method="post">
@@ -226,6 +258,47 @@
                 <input type="hidden" name="model" value="{{ model.id }}">
             </form>
         {% endif %}
+    {% elif state == 4 %}
+        <h2>Установка параметров модели</h2>
+        <form action="/new_model_page" method="get">
+            <input type="submit" value="На главную">
+        </form>
+        <form action="/new_model_continue/{{ model.id }}/3" method="get">
+            <input type="submit" value="Шаг назад">
+        </form>
+        <h2>Настройка фильтров для обучения</h2>
+        <form action="/set-model-params/{{ model.id }}" method="post">
+            <label>Вахта<br>
+                <input type="radio" name="is_vahta" value="0" checked>Нет<br>
+                <input type="radio" name="is_vahta" value="1">Да<br>
+            </label>
+            <label>Частичная занятость<br>
+                <input type="radio" name="is_parttime" value="0" checked>Нет<br>
+                <input type="radio" name="is_parttime" value="1">Да<br>
+            </label>
+            <label>Уровень опыта<br>
+                <input type="radio" name="experience_id" value="0" checked>Нет<br>
+                <input type="radio" name="experience_id" value="1">Низкий<br>
+                <input type="radio" name="experience_id" value="2">Высокий<br>
+            </label>
+            <label>Регион
+                <select name="region_name">
+                    {% for region in regions %}
+                        <option value="{{ region }}">{{ region }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <br>
+            <input type="submit" value="Сохранить">
+        </form>
+    {% elif state == 5 %}
+        <h2>Запуск обучения модели: {{ model.name }}</h2>
+        <form action="/new_model_page" method="get">
+            <input type="submit" value="На главную">
+        </form>
+        <form action="/teach_model/{{ model.id }}" method="get">
+            <input type="submit" value="ОБУЧИТЬ">
+        </form>
     {% endif %}
 </div>
 </body>

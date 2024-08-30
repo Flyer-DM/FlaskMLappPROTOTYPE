@@ -1,8 +1,9 @@
 import re
 import atexit
+from itertools import chain
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam
+from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam, ModelParam
 from utilities.model_utils import *
 from utilities.file_utils import cleanup
 from utilities.train_model import train_catboost, add_model_hyperparams, get_catboost_hyperparams
@@ -133,11 +134,13 @@ def save_upload_data():
         result = save_uploaded_dataset(dataset, model.profession)
         if temp_file and os.path.exists(temp_file):
             os.remove(temp_file)  # Удаляем временный файл
+        all_datas = get_all_data_tables(model.profession)
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, saved=True,
-                               save_result=result)
+                               save_result=result, all_datas=all_datas)
     if temp_file and os.path.exists(temp_file):
         os.remove(temp_file)  # Удаляем временный файл
-    return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, saved=False)
+    return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, saved=False,
+                           get_prof_name=get_prof_name)
 
 
 @app.route('/new_model_page', methods=[GET, POST])
@@ -216,47 +219,12 @@ def model_creation_page(state: int = None):
         db.session.commit()
         model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':
-            return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state)
+            all_datas = get_all_data_tables(model.profession)
+            return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
+                                   get_prof_name=get_prof_name, all_datas=all_datas)
         all_models = ModelMeta.query.all()
         return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
                                get_prof_name=get_prof_name, saved=1)
-
-
-@app.route('/incomplete_model', methods=[GET])
-@app.route('/incomplete_model/<int:model_id>', methods=[GET])
-@login_required
-def incomplete_model(model_id: int = None):
-    """Страница открытия незавершённой модели и подробностей о модели"""
-    user_name, user_surname = current_user.first_name, current_user.last_name
-    all_models = ModelMeta.query.all()
-    if model_id is not None:
-        model = ModelMeta.query.get(model_id)
-        hyperparams = ModelHyperparam.query.filter_by(model_id=model_id).all()
-        return render_template('incomplete_model.html', name=user_name, surname=user_surname, model=model, 
-                               get_prof_name=get_prof_name, show_table=False, hyperparams=hyperparams)
-    return render_template('incomplete_model.html', name=user_name, surname=user_surname, all_models=all_models,
-                           get_prof_name=get_prof_name, show_table=True)
-
-
-@app.route('/delete_model/<int:model_id>', methods=['POST'])
-@login_required
-def delete_model(model_id: int):
-    """Удаление модели и связанных записей"""
-    try:
-        # Удаление всех связанных записей в model_hyperparam
-        ModelHyperparam.query.filter_by(model_id=model_id).delete()
-        # Удаление самой модели
-        model = db.session.get(ModelMeta, model_id)
-        if model:
-            db.session.delete(model)
-            db.session.commit()
-            flash('Модель успешно удалена', 'success')
-        else:
-            flash('Модель не найдена', 'error')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Ошибка при удалении модели: {str(e)}', 'error')
-    return redirect(url_for('incomplete_model'))
 
 
 @app.route('/new_model_continue/<int:model_id>/<int:state>', methods=[GET, POST])
@@ -288,7 +256,94 @@ def continue_with_model(model_id: int, state: int):
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
                                state=state, get_prof_name=get_prof_name, method=method)
     elif state == 3:  # выбраны гиперпараметры модели
+        all_datas = get_all_data_tables(model.profession)
+        return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
+                               get_prof_name=get_prof_name, all_datas=all_datas)
+    elif state == 4:  # выбран слепок данных
+        regions = chain.from_iterable(pd.read_csv('./datasets/regions.csv', usecols=['region_name']).values.tolist())
+        return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
+                               regions=list(regions))
+    elif state == 5:  # выбраны параметры (фильтры) модели
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state)
+
+
+@app.route('/set-data-table/<int:model_id>/<string:table_name>', methods=[GET])
+@login_required
+def set_data_table_for_model(model_id: int, table_name: str):  # state = 4 (сохранение таблицы данных)
+    """Установка имени таблицы для обучения модели"""
+    user_name, user_surname, user_id = current_user.first_name, current_user.last_name, current_user.id
+    model: ModelMeta = ModelMeta.query.get(model_id)
+    model.train_table = table_name
+    model.state = 3
+    model.last_changed = user_id
+    db.session.commit()
+    return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
+                           get_prof_name=get_prof_name, state=model.state + 1)
+
+
+@app.route('/set-model-params/<int:model_id>', methods=[POST])
+@login_required
+def set_params_for_model(model_id: int):  # state = 5 (установка параметров (фильтров) модели)
+    """Установка параметров (фильтров) обучения: вахта, частичная занятость, уровень опыта, регион"""
+    user_name, user_surname, user_id = current_user.first_name, current_user.last_name, current_user.id
+    model: ModelMeta = ModelMeta.query.get(model_id)
+    is_vahta = bool(int(request.form.get('is_vahta')))
+    is_parttime = bool(int(request.form.get('is_parttime')))
+    experience_id = int(request.form.get('experience_id'))
+    region_name = request.form.get('region_name')
+    model_params = ModelParam(model_id=model_id, is_vahta=is_vahta, is_parttime=is_parttime,
+                              experience_id=experience_id, region_name=region_name)
+    model.state = 4
+    model.last_changed = user_id
+    db.session.add(model_params)
+    db.session.commit()
+    return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=model.state + 1)
+
+
+@app.route('/teach_model/<int:model_id>', methods=[GET])
+@login_required
+def teach_model(model_id: int):
+    """Запуск обучения модели"""
+    # ...
+    return render_template('main.html', name=current_user.first_name, surname=current_user.last_name)
+
+
+@app.route('/incomplete_model', methods=[GET])
+@app.route('/incomplete_model/<int:model_id>', methods=[GET])
+@login_required
+def incomplete_model(model_id: int = None):
+    """Страница открытия незавершённой модели и подробностей о модели"""
+    user_name, user_surname = current_user.first_name, current_user.last_name
+    all_models = ModelMeta.query.all()
+    if model_id is not None:
+        model = ModelMeta.query.get(model_id)
+        hyperparams = ModelHyperparam.query.filter_by(model_id=model_id).all()
+        params = ModelParam.query.filter_by(model_id=model_id).first()
+        return render_template('incomplete_model.html', name=user_name, surname=user_surname, model=model,
+                               get_prof_name=get_prof_name, show_table=False, hyperparams=hyperparams, params=params)
+    return render_template('incomplete_model.html', name=user_name, surname=user_surname, all_models=all_models,
+                           get_prof_name=get_prof_name, show_table=True)
+
+
+@app.route('/delete_model/<int:model_id>', methods=['POST'])
+@login_required
+def delete_model(model_id: int):
+    """Удаление модели и связанных записей"""
+    try:
+        # Удаление всех связанных записей в model_hyperparam
+        ModelHyperparam.query.filter_by(model_id=model_id).delete()
+        # Удаление самой модели
+        model = db.session.get(ModelMeta, model_id)
+        if model:
+            db.session.delete(model)
+            db.session.commit()
+            flash('Модель успешно удалена', 'success')
+        else:
+            flash('Модель не найдена', 'error')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Ошибка при удалении модели: {str(e)}', 'error')
+    return redirect(url_for('incomplete_model'))
 
 
 @app.route('/copy_unfinished_model', methods=[GET, POST])
