@@ -199,6 +199,14 @@
                 <p>Данные НЕ прошли проверку!</p>
                 <p>Ошибка:<strong>{{ e }}</strong></p>
             {% endif %}
+            {% if saved is defined and saved %}
+                <p>Данные были сохранены в БД</p>
+                {% if save_result is defined %}
+                    <p>{{ save_result }}</p>
+                {% endif %}
+            {% elif saved is defined and not saved %}
+                <p>Данные не были сохранены в БД</p>
+            {% endif %}
             <p>Загрузить свой датасет (csv)</p>
             <form action="/upload-dataset" method="post" enctype="multipart/form-data">
                 <input type="file" name="file" accept=".csv"/>
@@ -210,12 +218,12 @@
             <p>В РАЗРАБОТКЕ...</p>
         {% elif valid is defined %}
             <p>Данные прошли проверку!</p>
-            <form action="#" method="post">
+            <form action="/save-uploaded-dataset" method="post">
                 <p>Сохранить данные в виде слепка?</p>
-                <input type="submit" value="Да" disabled>
-                <input type="submit" value="Нет" disabled>
+                <input type="submit" name="save-data" value="Да">
+                <input type="submit" name="save-data" value="Нет">
                 <input type="hidden" name="profession" value="{{ model.profession }}">
-                <input type="hidden" name="dataset" value="{{ dataset }}">
+                <input type="hidden" name="model" value="{{ model.id }}">
             </form>
         {% endif %}
     {% endif %}

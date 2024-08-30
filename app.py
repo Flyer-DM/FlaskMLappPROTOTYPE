@@ -1,8 +1,10 @@
 import re
-from flask import Flask, render_template, request, redirect, url_for, flash
+import atexit
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam
 from utilities.model_utils import *
+from utilities.file_utils import cleanup
 from utilities.train_model import train_catboost, add_model_hyperparams, get_catboost_hyperparams
 from utilities.send_email import send_email_assync
 
@@ -21,6 +23,9 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите, чтобы получить доступ к этой странице.'
+
+
+atexit.register(cleanup)
 
 
 @login_manager.user_loader
@@ -103,12 +108,36 @@ def upload_dataset():
     """
     user_name, user_surname = current_user.first_name, current_user.last_name
     model: ModelMeta = ModelMeta.query.get(int(request.form.get('model')))
-    dataset = request.files['file']
-    e, valid = validate_dataset(dataset)
+    file = request.files['file']
+    e, valid, dataset = validate_dataset(file)
     if not valid:
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, e=e)
+    filename = f'./datasets/temp_data_{current_user.username}.csv'
+    dataset.to_csv(filename)
+    session['temp_file_path'] = filename
     return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, valid=valid,
                            dataset=dataset)
+
+
+@app.route('/save-uploaded-dataset', methods=[POST])
+@login_required
+def save_upload_data():
+    """Сохранение загруженного пользователем датасета (csv) в БД
+    :return: загрузка html страницы c переданными параметрами"""
+    save = request.form.get('save-data')
+    user_name, user_surname = current_user.first_name, current_user.last_name
+    model: ModelMeta = ModelMeta.query.get(int(request.form.get('model')))
+    temp_file = session.pop('temp_file_path', None)
+    if save == 'Да':
+        dataset = pd.read_csv(temp_file)
+        result = save_uploaded_dataset(dataset, model.profession)
+        if temp_file and os.path.exists(temp_file):
+            os.remove(temp_file)  # Удаляем временный файл
+        return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, saved=True,
+                               save_result=result)
+    if temp_file and os.path.exists(temp_file):
+        os.remove(temp_file)  # Удаляем временный файл
+    return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=3, saved=False)
 
 
 @app.route('/new_model_page', methods=[GET, POST])
