@@ -30,6 +30,8 @@ class ModelMeta(db.Model):
     used = db.Column(db.Boolean, default=False, nullable=False)  # Используется в калькуляторе?
     retrained = db.Column(db.Integer, default=0, nullable=False)  # Сколько раз была переобучена
     orig = db.Column(db.Integer, db.ForeignKey("model_meta.id"), nullable=True)  # Ссылка на оригинал модели, если копия
+    train_table = db.Column(db.String, nullable=True)  # имя таблицы для обучения
+    model_file = db.Column(db.String, nullable=True)  # имя (путь) до файла модели
 
     author_id = db.relationship(User, foreign_keys=[author])
     last_changed_user = db.relationship(User, foreign_keys=[last_changed])

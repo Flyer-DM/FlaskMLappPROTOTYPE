@@ -229,7 +229,6 @@ def incomplete_model(model_id: int = None):
     """Страница открытия незавершённой модели и подробностей о модели"""
     user_name, user_surname = current_user.first_name, current_user.last_name
     all_models = ModelMeta.query.all()
-
     if model_id is not None:
         model = ModelMeta.query.get(model_id)
         hyperparams = ModelHyperparam.query.filter_by(model_id=model_id).all()
@@ -246,7 +245,6 @@ def delete_model(model_id: int):
     try:
         # Удаление всех связанных записей в model_hyperparam
         ModelHyperparam.query.filter_by(model_id=model_id).delete()
-
         # Удаление самой модели
         model = db.session.get(ModelMeta, model_id)
         if model:

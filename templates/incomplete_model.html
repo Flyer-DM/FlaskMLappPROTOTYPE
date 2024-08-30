@@ -123,6 +123,12 @@
             <p><strong>Модель является оригиналом</strong></p>
         {% endif %}
         <p><strong>Финализация модели:</strong> {{ 'Да' if model.finalized else 'Нет' }}</p>
+        {% if model.train_table %}
+            <p><strong>Имя таблицы для обучения:</strong>{{ model.train_table }}</p>
+        {% endif %}
+        {% if model.model_file %}
+            <p><strong>Имя файла модели:</strong>{{ model.model_file }}</p>
+        {% endif %}
         <p><strong>Описание:</strong> {{ model.description }}</p>
         {% if hyperparams %}
             <p><strong>Гиперпараметры:</strong></p>
