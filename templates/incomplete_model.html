@@ -111,6 +111,8 @@
         <p><strong>Дата создания:</strong> {{ model.creation_on.strftime('%Y.%m.%d %H:%M:%S') }}</p>
         <p><strong>Метод моделирования:</strong> {{ model.method_id.name if model.method_id.name else 'не указан' }}</p>
         <p><strong>Последнее изменение:</strong> {{ model.updated_on.strftime('%Y.%m.%d %H:%M:%S') }}, {{ model.last_changed_user.last_name }} {{ model.last_changed_user.first_name }}</p>
+    </div>
+    <div class="container">
         <p><strong>Статус:</strong>
             {% if model.state == 0 %}
                 Создана запись о модели в БД
@@ -150,6 +152,8 @@
         {% endif %}
         <p><strong>Описание:</strong> {{ model.description }}</p>
         {% if hyperparams %}
+    </div>
+    <div class="container">
             <p><strong>Гиперпараметры:</strong></p>
             {% for param in hyperparams %}
                 <p><i>{{ param.name }}=</i>{{ param.value }}</p>

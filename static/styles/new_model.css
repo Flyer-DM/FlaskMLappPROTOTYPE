@@ -96,6 +96,7 @@ img {
     max-width: 100%; 
     overflow-y: auto; 
     overflow-x: auto;
+    margin-bottom: 50px;
 }
 
 /* Выравнивание заголовков таблицы по центру горизонтально и вертикально */
