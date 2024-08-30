@@ -260,11 +260,14 @@ def continue_with_model(model_id: int, state: int):
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                get_prof_name=get_prof_name, all_datas=all_datas)
     elif state == 4:  # выбран слепок данных
+        # TODO если фильтры уже стоят -> передавать их на страницу как выбранные
         regions = chain.from_iterable(pd.read_csv('./datasets/regions.csv', usecols=['region_name']).values.tolist())
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                regions=list(regions))
-    elif state == 5:  # выбраны параметры (фильтры) модели
-        return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state)
+    elif state >= 5:  # выбраны параметры (фильтры) модели
+        # TODO если модель уже обученная предлагать переобучить вместо обучения (удалять файл старой модели)
+        # TODO на будущее предлагать дообучать модель
+        return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=5)
 
 
 @app.route('/set-data-table/<int:model_id>/<string:table_name>', methods=[GET])
@@ -308,8 +311,9 @@ def teach_model(model_id: int):
     model: ModelMeta = ModelMeta.query.get(model_id)
     model.state = 5
     model.retrained += 1
+    model.last_changed = current_user.id
+    model.model_file = train_model(model_id)
     db.session.commit()
-    train_model(model_id)
     return render_template('main.html', name=current_user.first_name, surname=current_user.last_name, train='started')
 
 

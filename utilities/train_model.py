@@ -47,7 +47,7 @@ def train_catboost(data: pd.DataFrame, profession_num: int,
     return filename
 
 
-def train_model(model_id: int):
+def train_model(model_id: int) -> str:
     engine = create_engine(open('./interface_db.txt', 'r').read())
     model: ModelMeta = ModelMeta.query.get(model_id)
     param: ModelParam = ModelParam.query.filter_by(model_id=model_id).first()
@@ -58,12 +58,14 @@ def train_model(model_id: int):
         result = connection.execute(query)
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
     if ModelMethod.query.filter_by(id=model.method).first().name == 'CatBoostRegressor':
-        train_catboost(df, model.profession,
-                       int(ModelHyperparam.query.filter_by(model_id=model_id, name='epochs').first().value),
-                       int(ModelHyperparam.query.filter_by(model_id=model_id, name='early_stop').first().value),
-                       float(ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value),
-                       float(ModelHyperparam.query.filter_by(model_id=model_id, name='learning_rate').first().value),
-                       int(ModelHyperparam.query.filter_by(model_id=model_id, name='depth').first().value))
+        return train_catboost(
+            df, model.profession,
+            int(ModelHyperparam.query.filter_by(model_id=model_id, name='epochs').first().value),
+            int(ModelHyperparam.query.filter_by(model_id=model_id, name='early_stop').first().value),
+            float(ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value),
+            float(ModelHyperparam.query.filter_by(model_id=model_id, name='learning_rate').first().value),
+            int(ModelHyperparam.query.filter_by(model_id=model_id, name='depth').first().value)
+        )
 
 
 # def train_model_assync(model_id: int):
