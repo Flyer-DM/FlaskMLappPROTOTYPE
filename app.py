@@ -6,7 +6,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam, ModelParam
 from utilities.model_utils import *
 from utilities.file_utils import cleanup
-from utilities.train_model import train_model, add_model_hyperparams, get_catboost_hyperparams
+from utilities.train_model import train_model, add_model_hyperparams, get_catboost_hyperparams, get_linear_regression_hyperparams
 from utilities.send_email import send_email_assync
 
 app = Flask(__name__)
@@ -150,12 +150,15 @@ def model_creation_page(state: int = None):
     """Страница создания новой модели"""
     user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
     all_models = ModelMeta.query.all()
+    
     if request.method == GET:
         return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
                                get_prof_name=get_prof_name)
+    
     if state == 0:  # создание записи о модели
         prof_list = get_list_of_professions()
         return render_template('new_model.html', name=user_name, surname=user_surname, prof_list=prof_list, state=state)
+    
     elif state == 1:  # обработка создания записи о модели
         model_id = request.form.get('defined_model')
         model: ModelMeta = ModelMeta.query.get(int(model_id if model_id else 0))  # вносятся изменения
@@ -173,6 +176,7 @@ def model_creation_page(state: int = None):
             saved = 1
             db.session.add(model)
         db.session.commit()
+        
         model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':  # переход на следующий этап создания модели
             allowed = any(ModelHyperparam.query.filter_by(model_id=model_id))  # выбраны гиперпараметры? нельзя менять метод
@@ -180,9 +184,11 @@ def model_creation_page(state: int = None):
             method = method.name if method else None
             return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                    method_change_allowed=allowed, method=method)
+        
         all_models = ModelMeta.query.all()
         return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
                                get_prof_name=get_prof_name, saved=saved)
+    
     elif state == 2:  # обработка добавления метода моделирования
         model: ModelMeta = ModelMeta.query.get(model_id := int(request.form.get('model')))
         method: ModelMethod = ModelMethod.query.filter_by(name=request.form.get('model_method')).first()
@@ -190,6 +196,7 @@ def model_creation_page(state: int = None):
         model.state = state - 1  # состояние модели = 1
         model.last_changed = user_id
         db.session.commit()
+        
         model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':
             if any(ModelHyperparam.query.filter_by(model_id=model_id).all()):  # если уже есть гиперпараметры
@@ -198,15 +205,22 @@ def model_creation_page(state: int = None):
                     return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
                                            state=state, get_prof_name=get_prof_name, method=method.name,
                                            catboost_params=hyperparams)
+                elif method.name == 'LinearRegression':  
+                    hyperparams = get_linear_regression_hyperparams(model_id)  
+                    return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
+                                           state=state, get_prof_name=get_prof_name, method=method.name, linear_regression_params=hyperparams)
             return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                    get_prof_name=get_prof_name, method=method.name)
+        
         all_models = ModelMeta.query.all()
         return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
                                get_prof_name=get_prof_name, saved=1)
+    
     elif state == 3:  # обработка выбора гиперпараметров модели
         model_id = int(request.form.get('model'))
         model: ModelMeta = ModelMeta.query.get(model_id)
         method: ModelMethod = ModelMethod.query.filter_by(id=model.method).first()
+        
         if method.name == 'CatBoostRegressor':
             add_model_hyperparams(db, model_id,
                                   ('epochs', request.form.get('epochs')),
@@ -214,14 +228,20 @@ def model_creation_page(state: int = None):
                                   ('train_test', request.form.get('train_test').replace(',', '.', 1)),
                                   ('learning_rate', request.form.get('learning_rate').replace(',', '.', 1)),
                                   ('depth', request.form.get('depth')))
+        elif method.name == 'LinearRegression':
+            add_model_hyperparams(db, model_id,
+                                  ('train_test', request.form.get('train_test').replace(',', '.', 1)))
+        
         model.state = state - 1  # состояние модели = 2
         model.last_changed = user_id
         db.session.commit()
+        
         model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':
             all_datas = get_all_data_tables(model.profession)
             return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                    get_prof_name=get_prof_name, all_datas=all_datas)
+        
         all_models = ModelMeta.query.all()
         return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
                                get_prof_name=get_prof_name, saved=1)
@@ -253,6 +273,11 @@ def continue_with_model(model_id: int, state: int):
                 return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
                                        state=state, get_prof_name=get_prof_name, method=method,
                                        catboost_params=hyperparams)
+            elif method == 'LinearRegression':
+                hyperparams = get_catboost_hyperparams(model_id)  # TODO bool retrained (если обучена, нельзя менять гиперпараметры)
+                return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
+                                       state=state, get_prof_name=get_prof_name, method=method,
+                                       linear_regression_params=hyperparams)
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
                                state=state, get_prof_name=get_prof_name, method=method)
     elif state == 3:  # выбраны гиперпараметры модели

@@ -57,7 +57,10 @@ def train_model(model_id: int) -> str:
     with engine.connect() as connection:
         result = connection.execute(query)
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
-    if ModelMethod.query.filter_by(id=model.method).first().name == 'CatBoostRegressor':
+
+    model_name = ModelMethod.query.filter_by(id=model.method).first().name
+
+    if model_name == 'CatBoostRegressor':
         return train_catboost(
             df, model.profession,
             int(ModelHyperparam.query.filter_by(model_id=model_id, name='epochs').first().value),
@@ -65,6 +68,11 @@ def train_model(model_id: int) -> str:
             float(ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value),
             float(ModelHyperparam.query.filter_by(model_id=model_id, name='learning_rate').first().value),
             int(ModelHyperparam.query.filter_by(model_id=model_id, name='depth').first().value)
+        )
+    elif model_name == 'LinearRegression':
+        return train_linear_regression(
+            df, model.profession,
+            float(ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value)
         )
 
 
@@ -94,3 +102,49 @@ def get_catboost_hyperparams(model_id: int) -> dict:
         'learning_rate': learning_rate,
         'depth': depth,
     }
+
+def get_linear_regression_hyperparams(model_id: int) -> dict:
+    train_test = ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value
+    return {
+        'train_test': train_test
+    }
+
+
+def train_linear_regression(data: pd.DataFrame, profession_num: int, train_test: float) -> str:
+    target = 'new_salary'
+    
+    data = data.drop(columns=['id', 'salary_from_rub', 'source_site'], errors='ignore')
+
+    categorical_features = data.select_dtypes(include=['object']).columns
+    label_encoders = {}
+    
+    for feature in categorical_features:
+        le = LabelEncoder()
+        data[feature] = le.fit_transform(data[feature])
+        label_encoders[feature] = le
+    
+    features = [col for col in data.columns if col not in [target]]
+
+    x = data[features]
+    y = data[target]
+    
+    x_train, x_valid, y_train, y_valid = train_test_split(x, y, test_size=train_test, random_state=42)
+
+    model = LinearRegression()
+    model.fit(x_train, y_train)
+
+    y_pred = model.predict(x_valid)
+    mse = mean_squared_error(y_valid, y_pred)
+    print(f"Mean Squared Error: {mse}")
+
+    date_version = datetime.now().strftime('%Y%m%d%H%M%S')
+    path = f'{MODELS_PATH}/{profession_num}'
+    filename = f'{path}/{profession_num}_v{date_version}.pkl'
+    
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    with open(filename, 'wb') as f:
+        pickle.dump(model, f)
+    
+    return filename

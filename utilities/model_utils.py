@@ -1,6 +1,7 @@
 import os
 import glob
 import json
+import pickle
 import base64
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,6 +9,8 @@ from io import BytesIO
 from typing import Optional
 from datetime import datetime
 from catboost import CatBoostRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
 from werkzeug.datastructures import FileStorage
 from sklearn.preprocessing import LabelEncoder
 from sqlalchemy import Integer, Float, String, Boolean, DateTime
