@@ -21,8 +21,6 @@
     {% if state is undefined %}
         {% if saved is defined and saved == 1 %}
             <p class="first_p">Модель сохранена!</p>
-        {% elif saved is defined and saved == 2 %}
-            <p class="first_p">Модель обновлена!</p>
         {% endif %}
         <form action="/index" method="get">
             <input type="submit" value="На главную">
@@ -92,9 +90,6 @@
     <script src="/static/js/sortTable.js"></script>
     {% elif state == 0 %}
         <h2>Добавление записи модели</h2>
-        {% if model is defined %}
-            <h2>Изменение модели</h2>
-        {% endif %}
         <form action="/new_model_page" method="get">
             <input type="submit" value="Назад">
         </form>
@@ -129,9 +124,6 @@
         </form>
     {% elif state == 1 %}
         <h2>Выбор метода моделирования</h2>
-        {% if model is defined %}
-            <h2>Изменение модели</h2>
-        {% endif %}
         <form action="/new_model_page" method="get">
             <input type="submit" value="На главную">
         </form>
@@ -278,12 +270,20 @@
                 <div class="radio-group">
                     <p class="label">Вахта</p>
                     <label class="radio-container">
-                        <input type="radio" name="is_vahta" value="0" checked>
+                        {% if mf is defined and mf.is_vahta == false %}
+                            <input type="radio" name="is_vahta" value="0" checked>
+                        {% else %}
+                            <input type="radio" name="is_vahta" value="0">
+                        {% endif %}
                         <span class="radio-checkmark"></span>
                         Нет
                     </label>
                     <label class="radio-container">
-                        <input type="radio" name="is_vahta" value="1">
+                        {% if mf is defined and mf.is_vahta == true %}
+                            <input type="radio" name="is_vahta" value="1" checked>
+                        {% else %}
+                            <input type="radio" name="is_vahta" value="1">
+                        {% endif %}
                         <span class="radio-checkmark"></span>
                         Да
                     </label>
@@ -292,12 +292,20 @@
                 <div class="radio-group">
                     <p class="label">Частичная занятость</p>
                     <label class="radio-container">
-                        <input type="radio" name="is_parttime" value="0" checked>
+                        {% if mf is defined and mf.is_parttime == false %}
+                            <input type="radio" name="is_parttime" value="0" checked>
+                        {% else %}
+                            <input type="radio" name="is_parttime" value="0">
+                        {% endif %}
                         <span class="radio-checkmark"></span>
                         Нет
                     </label>
                     <label class="radio-container">
-                        <input type="radio" name="is_parttime" value="1">
+                        {% if mf is defined and mf.is_parttime == true %}
+                            <input type="radio" name="is_parttime" value="1" checked>
+                        {% else %}
+                            <input type="radio" name="is_parttime" value="1">
+                        {% endif %}
                         <span class="radio-checkmark"></span>
                         Да
                     </label>
@@ -306,17 +314,29 @@
                 <div class="radio-group">
                     <p class="label">Уровень опыта</p>
                     <label class="radio-container">
-                        <input type="radio" name="experience_id" value="0" checked>
+                        {% if mf is defined and mf.experience_id == 0 %}
+                            <input type="radio" name="experience_id" value="0" checked>
+                        {% else %}
+                            <input type="radio" name="experience_id" value="0">
+                        {% endif %}
                         <span class="radio-checkmark"></span>
                         Нет
                     </label>
                     <label class="radio-container">
-                        <input type="radio" name="experience_id" value="1">
+                        {% if mf is defined and mf.experience_id == 1 %}
+                            <input type="radio" name="experience_id" value="1" checked>
+                        {% else %}
+                            <input type="radio" name="experience_id" value="1">
+                        {% endif %}
                         <span class="radio-checkmark"></span>
                         Низкий
                     </label>
                     <label class="radio-container">
-                        <input type="radio" name="experience_id" value="2">
+                        {% if mf is defined and mf.experience_id == 2 %}
+                            <input type="radio" name="experience_id" value="2" checked>
+                        {% else %}
+                            <input type="radio" name="experience_id" value="2">
+                        {% endif %}
                         <span class="radio-checkmark"></span>
                         Высокий
                     </label>
@@ -326,7 +346,11 @@
                     <p class="label">Регион</p>
                     <select name="region_name">
                         {% for region in regions %}
-                            <option value="{{ region }}">{{ region }}</option>
+                            {% if mf is defined and mf.region_name == region %}
+                                <option value="{{ region }}" selected>{{ region }}</option>
+                            {% else %}
+                                <option value="{{ region }}">{{ region }}</option>
+                            {% endif %}
                         {% endfor %}
                     </select>
                 </div>
@@ -342,9 +366,24 @@
         <form action="/new_model_continue/{{ model.id }}/4" method="get">
             <input type="submit" value="Шаг назад">
         </form>
-        <form action="/teach_model/{{ model.id }}" method="get">
-            <input type="submit" value="ОБУЧИТЬ">
-        </form>
+        {% if not trained %}
+            <form action="/teach_model/{{ model.id }}" method="get">
+                <input type="submit" value="ОБУЧИТЬ">
+            </form>
+        {% else %}
+            <p>Модель уже обучена! Вы можете создать копию модели с теми же настройками, изменить их и обучить её заново.</p>
+            <p>Или дообучить модель с новыми данными (скоро будет).</p>
+            <form action="/incomplete_model/{{ model.id }}" method="get">
+                <input type="submit" title="посмотреть полное описание модели" value="характеристики модели">
+            </form>
+            <form action="/copy_unfinished_model" method="post">
+                <input type="submit" value="СКОПИРОВАТЬ">
+                <input type="hidden" name="model" value="{{ model.id }}">
+            </form>
+            <form action="#" method="get">
+                <input type="submit" value="ДООБУЧИТЬ" disabled>
+            </form>
+        {% endif %}
     {% endif %}
 </div>
 </body>

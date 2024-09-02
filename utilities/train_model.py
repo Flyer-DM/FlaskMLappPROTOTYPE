@@ -1,4 +1,5 @@
 # import threading
+from typing import Union
 from utilities.model_utils import *
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
@@ -81,7 +82,7 @@ def train_model(model_id: int) -> str:
 #     thread.start()
 
 
-def add_model_hyperparams(db: SQLAlchemy, model_id: int, *params) -> None:
+def add_model_hyperparams(db: SQLAlchemy, model_id: str, *params) -> None:
     for param_name, param_value in params:
         if hyperparam := ModelHyperparam.query.filter_by(model_id=model_id, name=param_name).first():
             hyperparam.value = param_value
@@ -89,7 +90,7 @@ def add_model_hyperparams(db: SQLAlchemy, model_id: int, *params) -> None:
             db.session.add(ModelHyperparam(model_id=model_id, name=param_name, value=param_value))
 
 
-def get_catboost_hyperparams(model_id: int) -> dict:
+def get_catboost_hyperparams(model_id: Union[int, str]) -> dict:
     epochs = ModelHyperparam.query.filter_by(model_id=model_id, name='epochs').first().value
     early_stop = ModelHyperparam.query.filter_by(model_id=model_id, name='early_stop').first().value
     train_test = ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value

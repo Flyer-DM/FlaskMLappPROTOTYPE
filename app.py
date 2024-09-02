@@ -150,77 +150,64 @@ def model_creation_page(state: int = None):
     """Страница создания новой модели"""
     user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
     all_models = ModelMeta.query.all()
-    
-    if request.method == GET:
+    if request.method == GET:  # список всех незавершённых моделей
         return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
                                get_prof_name=get_prof_name)
-    
-    if state == 0:  # создание записи о модели
+    if state == 0:  # страница для создания записи о новой модели
         prof_list = get_list_of_professions()
         return render_template('new_model.html', name=user_name, surname=user_surname, prof_list=prof_list, state=state)
-    
-    elif state == 1:  # обработка создания записи о модели
-        model_id = request.form.get('defined_model')
-        model: ModelMeta = ModelMeta.query.get(int(model_id if model_id else 0))  # вносятся изменения
+    elif state == 1:  # обработка создания записи о модели (автоматически state=0)
+        model_id = request.form.get('defined_model')  # получение id модели, если уже есть запись
+        model: ModelMeta = ModelMeta.query.get(model_id if model_id else 0)  # вносятся изменения
         name = request.form.get('model_name')  # может быть изменено значение
         description = request.form.get('model_description')  # может быть изменено значение
-        if model:  # если модель уже существует
+        if model:  # если модель уже существует (меняются параметры)
             model.name = name
             model.description = description
             model.last_changed = user_id
-            saved = 2
         else:  # добавляется новая запись о модели
             profession = get_prof_num(request.form.get('profession'))  # не может быть изменено значение
             model = ModelMeta(name=name, description=description, author=user_id, last_changed=user_id,
                               profession=profession)
-            saved = 1
             db.session.add(model)
         db.session.commit()
-        
         model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':  # переход на следующий этап создания модели
-            allowed = any(ModelHyperparam.query.filter_by(model_id=model_id))  # выбраны гиперпараметры? нельзя менять метод
+            allowed = any(ModelHyperparam.query.filter_by(model_id=model_id))  # есть ли уже гиперпараметры?
             method: ModelMethod = ModelMethod.query.filter_by(id=model.method).first()
             method = method.name if method else None
             return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                    method_change_allowed=allowed, method=method)
-        
-        all_models = ModelMeta.query.all()
-        return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
-                               get_prof_name=get_prof_name, saved=saved)
-    
+        return render_template('new_model.html', name=user_name, surname=user_surname, all_models=ModelMeta.query.all(),
+                               get_prof_name=get_prof_name, saved=1)
     elif state == 2:  # обработка добавления метода моделирования
-        model: ModelMeta = ModelMeta.query.get(model_id := int(request.form.get('model')))
+        model: ModelMeta = ModelMeta.query.get(model_id := request.form.get('model'))
         method: ModelMethod = ModelMethod.query.filter_by(name=request.form.get('model_method')).first()
         model.method = method.id
         model.state = state - 1  # состояние модели = 1
         model.last_changed = user_id
         db.session.commit()
-        
         model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':
             if any(ModelHyperparam.query.filter_by(model_id=model_id).all()):  # если уже есть гиперпараметры
                 if method.name == 'CatBoostRegressor':
-                    hyperparams = get_catboost_hyperparams(model_id)  # TODO bool retrained (если обучена, нельзя менять гиперпараметры)
+                    hyperparams = get_catboost_hyperparams(model_id)
                     return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
                                            state=state, get_prof_name=get_prof_name, method=method.name,
                                            catboost_params=hyperparams)
-                elif method.name == 'LinearRegression':  
-                    hyperparams = get_linear_regression_hyperparams(model_id)  
+                elif method.name == 'LinearRegression':
+                    hyperparams = get_linear_regression_hyperparams(model_id)
                     return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
                                            state=state, get_prof_name=get_prof_name, method=method.name, linear_regression_params=hyperparams)
             return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                    get_prof_name=get_prof_name, method=method.name)
-        
         all_models = ModelMeta.query.all()
         return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
                                get_prof_name=get_prof_name, saved=1)
-    
     elif state == 3:  # обработка выбора гиперпараметров модели
-        model_id = int(request.form.get('model'))
+        model_id = request.form.get('model')
         model: ModelMeta = ModelMeta.query.get(model_id)
         method: ModelMethod = ModelMethod.query.filter_by(id=model.method).first()
-        
         if method.name == 'CatBoostRegressor':
             add_model_hyperparams(db, model_id,
                                   ('epochs', request.form.get('epochs')),
@@ -231,17 +218,15 @@ def model_creation_page(state: int = None):
         elif method.name == 'LinearRegression':
             add_model_hyperparams(db, model_id,
                                   ('train_test', request.form.get('train_test').replace(',', '.', 1)))
-        
+
         model.state = state - 1  # состояние модели = 2
         model.last_changed = user_id
         db.session.commit()
-        
         model_continue = request.form.get('continue')
         if model_continue == 'Продолжить':
-            all_datas = get_all_data_tables(model.profession)
+            all_datas = get_all_data_tables(model.profession)  # все слепки данных из БД по номеру профессии
             return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                    get_prof_name=get_prof_name, all_datas=all_datas)
-        
         all_models = ModelMeta.query.all()
         return render_template('new_model.html', name=user_name, surname=user_surname, all_models=all_models,
                                get_prof_name=get_prof_name, saved=1)
@@ -255,7 +240,10 @@ def continue_with_model(model_id: int, state: int):
     :param state: этап создания модели
     """
     user_id, user_name, user_surname = current_user.id, current_user.first_name, current_user.last_name
-    model = ModelMeta.query.get(model_id)
+    model: ModelMeta = ModelMeta.query.get(model_id)
+    if model.state == 5:  # если модель уже обучена нельзя перейти на предыдущие шаги
+        return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=5,
+                               trained=True)
     if state == 0:  # ещё нет записи о таблицы
         return render_template('new_model.html', name=user_name, surname=user_surname, get_prof_name=get_prof_name,
                                state=state, model=model)
@@ -269,7 +257,7 @@ def continue_with_model(model_id: int, state: int):
         method: ModelMethod = ModelMethod.query.filter_by(id=model.method).first().name
         if any(ModelHyperparam.query.filter_by(model_id=model_id).all()):  # если уже есть гиперпараметры
             if method == 'CatBoostRegressor':
-                hyperparams = get_catboost_hyperparams(model_id)  # TODO bool retrained (если обучена, нельзя менять гиперпараметры)
+                hyperparams = get_catboost_hyperparams(model_id)
                 return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
                                        state=state, get_prof_name=get_prof_name, method=method,
                                        catboost_params=hyperparams)
@@ -285,13 +273,11 @@ def continue_with_model(model_id: int, state: int):
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                get_prof_name=get_prof_name, all_datas=all_datas)
     elif state == 4:  # выбран слепок данных
-        # TODO если фильтры уже стоят -> передавать их на страницу как выбранные
+        mf: ModelParam = ModelParam.query.filter_by(model_id=model_id).first()
         regions = chain.from_iterable(pd.read_csv('./datasets/regions.csv', usecols=['region_name']).values.tolist())
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
-                               regions=list(regions))
-    elif state >= 5:  # выбраны параметры (фильтры) модели
-        # TODO если модель уже обученная предлагать переобучить вместо обучения (удалять файл старой модели)
-        # TODO на будущее предлагать дообучать модель
+                               regions=list(regions), mf=mf)
+    elif state == 5:
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=5)
 
 
@@ -302,7 +288,7 @@ def set_data_table_for_model(model_id: int, table_name: str):  # state = 4 (со
     user_name, user_surname, user_id = current_user.first_name, current_user.last_name, current_user.id
     model: ModelMeta = ModelMeta.query.get(model_id)
     model.train_table = table_name
-    model.state = 3
+    model.state = model.state if model.state > 3 else 3
     model.last_changed = user_id
     db.session.commit()
     regions = chain.from_iterable(pd.read_csv('./datasets/regions.csv', usecols=['region_name']).values.tolist())
@@ -320,11 +306,16 @@ def set_params_for_model(model_id: int):  # state = 5 (установка пар
     is_parttime = bool(int(request.form.get('is_parttime')))
     experience_id = int(request.form.get('experience_id'))
     region_name = request.form.get('region_name')
-    model_params = ModelParam(model_id=model_id, is_vahta=is_vahta, is_parttime=is_parttime,
-                              experience_id=experience_id, region_name=region_name)
-    model.state = 4
+    if (model_param := ModelParam.query.filter_by(model_id=model_id).first()) is not None:  # параметры уже настроены:
+        model_param.is_vahta = is_vahta
+        model_param.is_parttime = is_parttime
+        model_param.experience_id = experience_id
+        model_param.region_name = region_name
+    else:  # сохраняются новые параметры модели
+        model_params = ModelParam(model_id=model_id, is_vahta=is_vahta, is_parttime=is_parttime,
+                                  experience_id=experience_id, region_name=region_name)
+        db.session.add(model_params)
     model.last_changed = user_id
-    db.session.add(model_params)
     db.session.commit()
     return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=model.state + 1)
 
@@ -364,7 +355,9 @@ def incomplete_model(model_id: int = None):
 def delete_model(model_id: int):
     """Удаление модели и связанных записей"""
     try:
-        model = db.session.get(ModelMeta, model_id)
+        model: ModelMeta = db.session.get(ModelMeta, model_id)
+        if (file_to_del := model.model_file) is not None:  # если модель уже обучена, нужно удалить файл модели
+            os.remove(file_to_del)
         db.session.delete(model)
         db.session.commit()
     except Exception as e:
@@ -385,7 +378,7 @@ def copy_unfinished_model():
     if request.method == POST:
         model_id = request.form.get('model')
         # Создаем копию модели
-        original_model = ModelMeta.query.get(model_id)
+        original_model: ModelMeta = ModelMeta.query.get(model_id)
         new_model = ModelMeta(
             name=original_model.name + " (копия)",
             description=original_model.description,
@@ -393,9 +386,8 @@ def copy_unfinished_model():
             last_changed=user_id,
             profession=original_model.profession,
             method=original_model.method,
-            state=original_model.state,
+            state=original_model.state if original_model.state < 5 else 4,  # если копия обученной модели
             train_table=original_model.train_table,
-            model_file=original_model.model_file,
             orig=original_model.id
         )
         db.session.add(new_model)
@@ -409,7 +401,7 @@ def copy_unfinished_model():
             )
             db.session.add(new_param)
         # Создаём копию параметров
-        param = ModelParam.query.filter_by(model_id=model_id).first()
+        param: ModelParam = ModelParam.query.filter_by(model_id=model_id).first()
         if param:
             new_param = ModelParam(
                 model_id=new_model.id,
@@ -420,7 +412,10 @@ def copy_unfinished_model():
             )
             db.session.add(new_param)
         db.session.commit()
-        return redirect('/index')
+        if original_model.state < 5:
+            return redirect('/index')
+        return render_template('new_model.html', name=user_name, surname=user_surname, get_prof_name=get_prof_name,
+                               state=0, model=new_model)
 
 
 @app.route('/loading', methods=[GET])
