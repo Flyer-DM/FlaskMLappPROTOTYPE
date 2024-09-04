@@ -6,6 +6,8 @@ from datetime import datetime
 from flask_sqlalchemy.extension import SQLAlchemy
 from sqlalchemy import create_engine, text
 from domain import ModelMeta, ModelMethod, ModelHyperparam, ModelParam
+import shap
+import numpy as np
 
 
 def train_catboost(data: pd.DataFrame, profession_num: int,
@@ -135,6 +137,18 @@ def train_linear_regression(data: pd.DataFrame, profession_num: int) -> str:
     y_pred = model.predict(x_valid)
     mse = mean_squared_error(y_valid, y_pred)
     print(f"Mean Squared Error: {mse}")
+
+    explainer = shap.Explainer(model, x_train)
+    shap_values = explainer(x_valid)
+    feature_importance = np.abs(shap_values.values).mean(axis=0)
+    feature_importance_df = pd.DataFrame({
+        "feature": shap_values.feature_names,
+        "importance": feature_importance
+    })
+    top_10_features = feature_importance_df.sort_values(by="importance", ascending=False).head(10)
+    for index, row in top_10_features.iterrows():
+        print(f"Признак: {row['feature']}, Важность: {row['importance']:.4f}")
+
 
     date_version = datetime.now().strftime('%Y%m%d%H%M%S')
     path = f'{MODELS_PATH}/{profession_num}'
