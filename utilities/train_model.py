@@ -71,8 +71,7 @@ def train_model(model_id: int) -> str:
         )
     elif model_name == 'LinearRegression':
         return train_linear_regression(
-            df, model.profession,
-            float(ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value)
+            df, model.profession
         )
 
 
@@ -103,14 +102,14 @@ def get_catboost_hyperparams(model_id: int) -> dict:
         'depth': depth,
     }
 
-def get_linear_regression_hyperparams(model_id: int) -> dict:
-    train_test = ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value
-    return {
-        'train_test': train_test
-    }
+# def get_linear_regression_hyperparams(model_id: int) -> dict:
+#     train_test = ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value
+#     return {
+#         'train_test': train_test
+#     }
 
 
-def train_linear_regression(data: pd.DataFrame, profession_num: int, train_test: float) -> str:
+def train_linear_regression(data: pd.DataFrame, profession_num: int) -> str:
     target = 'new_salary'
     
     data = data.drop(columns=['id', 'salary_from_rub', 'source_site'], errors='ignore')
@@ -128,7 +127,7 @@ def train_linear_regression(data: pd.DataFrame, profession_num: int, train_test:
     x = data[features]
     y = data[target]
     
-    x_train, x_valid, y_train, y_valid = train_test_split(x, y, test_size=train_test, random_state=42)
+    x_train, x_valid, y_train, y_valid = train_test_split(x, y, random_state=42)
 
     model = LinearRegression()
     model.fit(x_train, y_train)

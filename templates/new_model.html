@@ -187,10 +187,10 @@
                            value="{{ catboost_params['depth'] if catboost_params else 6 }}" required min="1" max="16">
                 </label>
             {% elif method == 'LinearRegression' %}
-                <label>Разбиение train/test:
+                <!-- <label>Разбиение train/test:
                     <input type="number" name="train_test" 
                     value="{{ linear_regression_params['train_test'] if linear_regression_params else 0.25 }}" required min="0.01" max="1" step="0.01">
-                </label>
+                </label> -->
             {% endif %}            
             <input type="hidden" name="model" value="{{ model.id }}">
             <input type="submit" name="continue" value="Продолжить">
