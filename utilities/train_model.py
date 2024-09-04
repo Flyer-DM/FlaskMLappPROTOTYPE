@@ -7,6 +7,8 @@ from datetime import datetime
 from flask_sqlalchemy.extension import SQLAlchemy
 from sqlalchemy import create_engine, text
 from domain import ModelMeta, ModelMethod, ModelHyperparam, ModelParam
+import shap
+import numpy as np
 
 
 def train_catboost(data: pd.DataFrame, profession_num: int,
@@ -72,8 +74,7 @@ def train_model(model_id: int) -> str:
         )
     elif model_name == 'LinearRegression':
         return train_linear_regression(
-            df, model.profession,
-            float(ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value)
+            df, model.profession
         )
 
 
@@ -104,14 +105,14 @@ def get_catboost_hyperparams(model_id: Union[int, str]) -> dict:
         'depth': depth,
     }
 
-def get_linear_regression_hyperparams(model_id: int) -> dict:
-    train_test = ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value
-    return {
-        'train_test': train_test
-    }
+# def get_linear_regression_hyperparams(model_id: int) -> dict:
+#     train_test = ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value
+#     return {
+#         'train_test': train_test
+#     }
 
 
-def train_linear_regression(data: pd.DataFrame, profession_num: int, train_test: float) -> str:
+def train_linear_regression(data: pd.DataFrame, profession_num: int) -> str:
     target = 'new_salary'
     
     data = data.drop(columns=['id', 'salary_from_rub', 'source_site'], errors='ignore')
@@ -129,7 +130,7 @@ def train_linear_regression(data: pd.DataFrame, profession_num: int, train_test:
     x = data[features]
     y = data[target]
     
-    x_train, x_valid, y_train, y_valid = train_test_split(x, y, test_size=train_test, random_state=42)
+    x_train, x_valid, y_train, y_valid = train_test_split(x, y, random_state=42)
 
     model = LinearRegression()
     model.fit(x_train, y_train)
@@ -137,6 +138,18 @@ def train_linear_regression(data: pd.DataFrame, profession_num: int, train_test:
     y_pred = model.predict(x_valid)
     mse = mean_squared_error(y_valid, y_pred)
     print(f"Mean Squared Error: {mse}")
+
+    explainer = shap.Explainer(model, x_train)
+    shap_values = explainer(x_valid)
+    feature_importance = np.abs(shap_values.values).mean(axis=0)
+    feature_importance_df = pd.DataFrame({
+        "feature": shap_values.feature_names,
+        "importance": feature_importance
+    })
+    top_10_features = feature_importance_df.sort_values(by="importance", ascending=False).head(10)
+    for index, row in top_10_features.iterrows():
+        print(f"Признак: {row['feature']}, Важность: {row['importance']:.4f}")
+
 
     date_version = datetime.now().strftime('%Y%m%d%H%M%S')
     path = f'{MODELS_PATH}/{profession_num}'

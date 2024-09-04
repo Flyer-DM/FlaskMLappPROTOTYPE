@@ -6,7 +6,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam, ModelParam
 from utilities.model_utils import *
 from utilities.file_utils import cleanup
-from utilities.train_model import train_model, add_model_hyperparams, get_catboost_hyperparams, get_linear_regression_hyperparams
+from utilities.train_model import train_model, add_model_hyperparams, get_catboost_hyperparams
 from utilities.send_email import send_email_assync
 
 app = Flask(__name__)
@@ -197,8 +197,10 @@ def model_creation_page(state: int = None):
                                            catboost_params=hyperparams)
                 elif method.name == 'LinearRegression':
                     hyperparams = get_linear_regression_hyperparams(model_id)
+                elif method.name == 'LinearRegression':
+                    # hyperparams = get_linear_regression_hyperparams(model_id)
                     return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
-                                           state=state, get_prof_name=get_prof_name, method=method.name, linear_regression_params=hyperparams)
+                                           state=state, get_prof_name=get_prof_name, method=method.name)
             return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                    get_prof_name=get_prof_name, method=method.name)
         all_models = ModelMeta.query.all()
@@ -216,9 +218,9 @@ def model_creation_page(state: int = None):
                                   ('learning_rate', request.form.get('learning_rate').replace(',', '.', 1)),
                                   ('depth', request.form.get('depth')))
         elif method.name == 'LinearRegression':
-            add_model_hyperparams(db, model_id,
-                                  ('train_test', request.form.get('train_test').replace(',', '.', 1)))
-
+            add_model_hyperparams(db, model_id)
+                                #   ('train_test', request.form.get('train_test').replace(',', '.', 1)))
+        
         model.state = state - 1  # состояние модели = 2
         model.last_changed = user_id
         db.session.commit()
