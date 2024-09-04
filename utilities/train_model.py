@@ -4,6 +4,8 @@ from utilities.model_utils import *
 from flask_sqlalchemy.extension import SQLAlchemy
 from sqlalchemy import create_engine, text
 from domain import ModelMeta, ModelMethod, ModelHyperparam, ModelParam
+import shap
+
 
 
 def train_catboost(data: pd.DataFrame, profession_num: int,
@@ -70,13 +72,20 @@ def train_model(model_id: int) -> (str, int, float, str, dict, dict):
     with engine.connect() as connection:
         result = connection.execute(query)
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
-    if ModelMethod.query.filter_by(id=model.method).first().name == 'CatBoostRegressor':
+
+    model_name = ModelMethod.query.filter_by(id=model.method).first().name
+
+    if model_name == 'CatBoostRegressor':
         return train_catboost(
             df, model.profession,
             int(ModelHyperparam.query.filter_by(model_id=model_id, name='epochs').first().value),
             int(ModelHyperparam.query.filter_by(model_id=model_id, name='early_stop').first().value),
             float(ModelHyperparam.query.filter_by(model_id=model_id, name='learning_rate').first().value),
             int(ModelHyperparam.query.filter_by(model_id=model_id, name='depth').first().value)
+        )
+    elif model_name == 'LinearRegression':
+        return train_linear_regression(
+            df, model.profession
         )
 
 
@@ -120,3 +129,55 @@ def deviation_metric(true_values: pd.Series, pred_values: np.ndarray):
         dev = deviation > percent
         metric_y[f'more_{percent}'] = f'{sum(dev) / len(dev) * 100:.2f}%'
     return {**metric_x, **metric_y}
+
+
+def train_linear_regression(data: pd.DataFrame, profession_num: int) -> str:
+    target = 'new_salary'
+
+    data = data.drop(columns=['id', 'salary_from_rub', 'source_site'], errors='ignore')
+
+    categorical_features = data.select_dtypes(include=['object']).columns
+    label_encoders = {}
+
+    for feature in categorical_features:
+        le = LabelEncoder()
+        data[feature] = le.fit_transform(data[feature])
+        label_encoders[feature] = le
+
+    features = [col for col in data.columns if col not in [target]]
+
+    x = data[features]
+    y = data[target]
+
+    x_train, x_valid, y_train, y_valid = train_test_split(x, y, random_state=42)
+
+    model = LinearRegression()
+    model.fit(x_train, y_train)
+
+    y_pred = model.predict(x_valid)
+    mse = mean_squared_error(y_valid, y_pred)
+    print(f"Mean Squared Error: {mse}")
+
+    explainer = shap.Explainer(model, x_train)
+    shap_values = explainer(x_valid)
+    feature_importance = np.abs(shap_values.values).mean(axis=0)
+    feature_importance_df = pd.DataFrame({
+        "feature": shap_values.feature_names,
+        "importance": feature_importance
+    })
+    top_10_features = feature_importance_df.sort_values(by="importance", ascending=False).head(10)
+    for index, row in top_10_features.iterrows():
+        print(f"Признак: {row['feature']}, Важность: {row['importance']:.4f}")
+
+
+    date_version = datetime.now().strftime('%Y%m%d%H%M%S')
+    path = f'{MODELS_PATH}/{profession_num}'
+    filename = f'{path}/{profession_num}_v{date_version}.pkl'
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    with open(filename, 'wb') as f:
+        pickle.dump(model, f)
+
+    return filename
