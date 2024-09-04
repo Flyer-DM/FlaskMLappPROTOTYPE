@@ -135,6 +135,19 @@
                 {% if method_change_allowed is defined and method_change_allowed and method is defined %}
                     <input type="text" disabled value="{{ method }}">
                     <input type="hidden" name="model_method" value="{{ method }}">
+                {% elif method_change_allowed is defined and not method_change_allowed and method is defined%}
+                    <select name="model_method">
+                        {% if method == "CatBoostRegressor" %}
+                            <option value="CatBoostRegressor" selected>CatBoostRegressor</option>
+                        {% else %}
+                            <option value="CatBoostRegressor">CatBoostRegressor</option>
+                        {% endif %}
+                        {% if method == "LinearRegression" %}
+                            <option value="LinearRegression" selected>LinearRegression</option>
+                        {% else %}
+                            <option value="LinearRegression">LinearRegression</option>
+                        {% endif %}
+                    </select>
                 {% else %}
                     <select name="model_method">
                         <option value="CatBoostRegressor">CatBoostRegressor</option>
@@ -175,10 +188,7 @@
                            value="{{ catboost_params['depth'] if catboost_params else 6 }}" required min="1" max="16">
                 </label>
             {% elif method == 'LinearRegression' %}
-                <!-- <label>Разбиение train/test:
-                    <input type="number" name="train_test" 
-                    value="{{ linear_regression_params['train_test'] if linear_regression_params else 0.25 }}" required min="0.01" max="1" step="0.01">
-                </label> -->
+                <p>Гиперпараметры не настраиваются для {{ method }}</p>
             {% endif %}            
             <input type="hidden" name="model" value="{{ model.id }}">
             <input type="submit" name="continue" value="Продолжить">
@@ -189,9 +199,15 @@
         <form action="/new_model_page" method="get">
             <input type="submit" value="На главную">
         </form>
-        <form action="/new_model_continue/{{ model.id }}/2" method="get">
-            <input type="submit" value="Шаг назад">
-        </form>
+        {% if model.method_id.name != 'LinearRegression' %}
+            <form action="/new_model_continue/{{ model.id }}/2" method="get">
+                <input type="submit" value="Шаг назад">
+            </form>
+        {% else %}
+            <form action="/new_model_continue/{{ model.id }}/1" method="get">
+                <input type="submit" value="Шаг назад">
+            </form>
+        {% endif %}
         {% if valid is undefined %}
             {% if e is defined %}
                 <p>Данные НЕ прошли проверку!</p>
@@ -267,9 +283,9 @@
                     <p class="label">Вахта</p>
                     <label class="radio-container">
                         {% if mf is defined and mf.is_vahta == false %}
-                            <input type="radio" name="is_vahta" value="0" checked>
+                            <input type="radio" name="is_vahta" value="0" checked required>
                         {% else %}
-                            <input type="radio" name="is_vahta" value="0">
+                            <input type="radio" name="is_vahta" value="0" required>
                         {% endif %}
                         <span class="radio-checkmark"></span>
                         Нет
@@ -289,9 +305,9 @@
                     <p class="label">Частичная занятость</p>
                     <label class="radio-container">
                         {% if mf is defined and mf.is_parttime == false %}
-                            <input type="radio" name="is_parttime" value="0" checked>
+                            <input type="radio" name="is_parttime" value="0" checked required>
                         {% else %}
-                            <input type="radio" name="is_parttime" value="0">
+                            <input type="radio" name="is_parttime" value="0" required>
                         {% endif %}
                         <span class="radio-checkmark"></span>
                         Нет
@@ -311,9 +327,9 @@
                     <p class="label">Уровень опыта</p>
                     <label class="radio-container">
                         {% if mf is defined and mf.experience_id == 0 %}
-                            <input type="radio" name="experience_id" value="0" checked>
+                            <input type="radio" name="experience_id" value="0" checked required>
                         {% else %}
-                            <input type="radio" name="experience_id" value="0">
+                            <input type="radio" name="experience_id" value="0" required>
                         {% endif %}
                         <span class="radio-checkmark"></span>
                         Нет
@@ -340,7 +356,7 @@
     
                 <div class="select-group">
                     <p class="label">Регион</p>
-                    <select name="region_name">
+                    <select name="region_name" required>
                         {% for region in regions %}
                             {% if mf is defined and mf.region_name == region %}
                                 <option value="{{ region }}" selected>{{ region }}</option>
@@ -359,10 +375,10 @@
         <form action="/new_model_page" method="get">
             <input type="submit" value="На главную">
         </form>
-        <form action="/new_model_continue/{{ model.id }}/4" method="get">
-            <input type="submit" value="Шаг назад">
-        </form>
         {% if not trained %}
+            <form action="/new_model_continue/{{ model.id }}/4" method="get">
+                <input type="submit" value="Шаг назад">
+            </form>
             <form action="/teach_model/{{ model.id }}" method="get">
                 <input type="submit" value="ОБУЧИТЬ">
             </form>

@@ -1,11 +1,15 @@
+import os
+import pickle
 import numpy as np
 from typing import Union
 from utilities.model_utils import *
 from flask_sqlalchemy.extension import SQLAlchemy
 from sqlalchemy import create_engine, text
 from domain import ModelMeta, ModelMethod, ModelHyperparam, ModelParam
+from sklearn.linear_model import LinearRegression
+from catboost import CatBoostRegressor
+from sklearn.metrics import root_mean_squared_error, mean_absolute_percentage_error
 import shap
-
 
 
 def train_catboost(data: pd.DataFrame, profession_num: int,
@@ -20,12 +24,9 @@ def train_catboost(data: pd.DataFrame, profession_num: int,
     # удаление неиспользуемых в обучении столбцов и дубликатов
     data = data.drop(columns=['id', 'salary_from_rub', 'source_site'], errors='ignore')
     data = data.drop_duplicates()
-    # подготовка категориальных признаков. TODO проверить, что есть НЕ категориальные признаки
-    categorical_columns = []
-    for col in data.columns[data.dtypes == object]:
-        categorical_columns.append(col)
-    features = [col for col in data.columns if col not in [target]]
-    cat_idxs = [i for i, f in enumerate(features) if f in categorical_columns]
+    # все признаки являются категориальными
+    features = [col for col in data.columns if col != target]
+    cat_idxs = [i for i, f in enumerate(features)]
     # инициализация модели с переданными гиперпараметрами модели и метапараметрами
     model = CatBoostRegressor(allow_writing_files=False, iterations=epochs, loss_function='RMSE', depth=depth,
                               early_stopping_rounds=early_stop, learning_rate=learning_rate, thread_count=-1,
@@ -58,7 +59,54 @@ def train_catboost(data: pd.DataFrame, profession_num: int,
     else:
         os.mkdir(path)
         model.save_model(filename := f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
-    return 'filename', n, rmse, mape, dev_metrics, feature_importances
+    return filename, n, rmse, mape, dev_metrics, feature_importances
+
+
+def train_linear_regression(data: pd.DataFrame, profession_num: int) -> (str, int, float, str, dict, dict):
+    target = 'new_salary'
+
+    data = data.drop(columns=['id', 'salary_from_rub', 'source_site'], errors='ignore')
+
+    categorical_features = data.select_dtypes(include=['object']).columns
+    label_encoders = {}
+
+    for feature in categorical_features:
+        le = LabelEncoder()
+        data[feature] = le.fit_transform(data[feature])
+        label_encoders[feature] = le
+
+    features = [col for col in data.columns if col != target]
+
+    x = data[features]
+    y = data[target]
+
+    model = LinearRegression(n_jobs=-1)
+    model.fit(x, y)
+
+    y_pred = model.predict(x)
+
+    n = data.shape[0]
+    rmse = root_mean_squared_error(y, y_pred)
+    mape = f"{mean_absolute_percentage_error(y, y_pred):.2f}%"
+    dev_metrics = deviation_metric(y, y_pred)
+
+    explainer = shap.Explainer(model, x)
+    shap_values = explainer(x)
+    feature_importance = np.abs(shap_values.values).mean(axis=0)
+    indexes = [translit(col, 'ru') for col in shap_values.feature_names]
+    feature_importances = pd.Series(feature_importance, index=indexes).sort_values(ascending=False)[:10].to_dict()
+
+    date_version = datetime.now().strftime('%Y%m%d%H%M%S')
+    path = f'{MODELS_PATH}/{profession_num}'
+    filename = f'{path}/{profession_num}_v{date_version}.pkl'
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    with open(filename, 'wb') as f:
+        pickle.dump(model, f)
+
+    return filename, n, rmse, mape, dev_metrics, feature_importances
 
 
 def train_model(model_id: int) -> (str, int, float, str, dict, dict):
@@ -129,55 +177,3 @@ def deviation_metric(true_values: pd.Series, pred_values: np.ndarray):
         dev = deviation > percent
         metric_y[f'more_{percent}'] = f'{sum(dev) / len(dev) * 100:.2f}%'
     return {**metric_x, **metric_y}
-
-
-def train_linear_regression(data: pd.DataFrame, profession_num: int) -> str:
-    target = 'new_salary'
-
-    data = data.drop(columns=['id', 'salary_from_rub', 'source_site'], errors='ignore')
-
-    categorical_features = data.select_dtypes(include=['object']).columns
-    label_encoders = {}
-
-    for feature in categorical_features:
-        le = LabelEncoder()
-        data[feature] = le.fit_transform(data[feature])
-        label_encoders[feature] = le
-
-    features = [col for col in data.columns if col not in [target]]
-
-    x = data[features]
-    y = data[target]
-
-    x_train, x_valid, y_train, y_valid = train_test_split(x, y, random_state=42)
-
-    model = LinearRegression()
-    model.fit(x_train, y_train)
-
-    y_pred = model.predict(x_valid)
-    mse = mean_squared_error(y_valid, y_pred)
-    print(f"Mean Squared Error: {mse}")
-
-    explainer = shap.Explainer(model, x_train)
-    shap_values = explainer(x_valid)
-    feature_importance = np.abs(shap_values.values).mean(axis=0)
-    feature_importance_df = pd.DataFrame({
-        "feature": shap_values.feature_names,
-        "importance": feature_importance
-    })
-    top_10_features = feature_importance_df.sort_values(by="importance", ascending=False).head(10)
-    for index, row in top_10_features.iterrows():
-        print(f"Признак: {row['feature']}, Важность: {row['importance']:.4f}")
-
-
-    date_version = datetime.now().strftime('%Y%m%d%H%M%S')
-    path = f'{MODELS_PATH}/{profession_num}'
-    filename = f'{path}/{profession_num}_v{date_version}.pkl'
-
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    with open(filename, 'wb') as f:
-        pickle.dump(model, f)
-
-    return filename

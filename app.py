@@ -1,8 +1,9 @@
+import os
 import atexit
 from itertools import chain
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam, ModelParam, ModelMetrics, ModelFeatureImportance
+from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam, ModelParam, ModelMetrics
 from utilities.model_utils import *
 from utilities.file_utils import cleanup
 from utilities.train_model import train_model, add_model_hyperparams, get_catboost_hyperparams
@@ -174,12 +175,10 @@ def model_creation_page(state: int = None):
                     return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
                                            state=state, get_prof_name=get_prof_name, method=method.name,
                                            catboost_params=hyperparams)
-                elif method.name == 'LinearRegression':
-                    hyperparams = get_linear_regression_hyperparams(model_id)
-                elif method.name == 'LinearRegression':
-                    # hyperparams = get_linear_regression_hyperparams(model_id)
-                    return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
-                                           state=state, get_prof_name=get_prof_name, method=method.name)
+            if method.name == 'LinearRegression':
+                all_datas = get_all_data_tables(model.profession)  # все слепки данных из БД по номеру профессии
+                return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
+                                       state=state + 1, get_prof_name=get_prof_name, all_datas=all_datas)
             return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=state,
                                    get_prof_name=get_prof_name, method=method.name)
         all_models = ModelMeta.query.all()
@@ -195,10 +194,6 @@ def model_creation_page(state: int = None):
                                   ('early_stop', request.form.get('early_stop')),
                                   ('learning_rate', request.form.get('learning_rate').replace(',', '.', 1)),
                                   ('depth', request.form.get('depth')))
-        elif method.name == 'LinearRegression':
-            add_model_hyperparams(db, model_id)
-                                #   ('train_test', request.form.get('train_test').replace(',', '.', 1)))
-
         model.state = state - 1  # состояние модели = 2
         model.last_changed = user_id
         db.session.commit()
@@ -241,11 +236,10 @@ def continue_with_model(model_id: int, state: int):
                 return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
                                        state=state, get_prof_name=get_prof_name, method=method,
                                        catboost_params=hyperparams)
-            elif method == 'LinearRegression':
-                hyperparams = get_catboost_hyperparams(model_id)
-                return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
-                                       state=state, get_prof_name=get_prof_name, method=method,
-                                       linear_regression_params=hyperparams)
+        if method == 'LinearRegression':
+            all_datas = get_all_data_tables(model.profession)  # все слепки данных из БД по номеру профессии
+            return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
+                                   state=state + 1, get_prof_name=get_prof_name, all_datas=all_datas)
         return render_template('new_model.html', name=user_name, surname=user_surname, model=model,
                                state=state, get_prof_name=get_prof_name, method=method)
     elif state == 3:  # выбраны гиперпараметры модели
@@ -358,7 +352,10 @@ def delete_model(model_id: int):
     try:
         model: ModelMeta = db.session.get(ModelMeta, model_id)
         if (file_to_del := model.model_file) is not None:  # если модель уже обучена, нужно удалить файл модели
-            os.remove(file_to_del)
+            try:
+                os.remove(file_to_del)
+            except Exception:
+                pass
         db.session.delete(model)
         db.session.commit()
     except Exception as e:

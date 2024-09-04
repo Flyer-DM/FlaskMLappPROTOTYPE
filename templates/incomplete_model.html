@@ -151,22 +151,24 @@
             <p><strong>Имя файла модели: </strong>{{ model.model_file }}</p>
         {% endif %}
         <p><strong>Описание:</strong> {{ model.description }}</p>
-        {% if hyperparams %}
     </div>
-    <div class="container">
-            <p><strong>Гиперпараметры:</strong></p>
-            {% for param in hyperparams %}
-                <p><i>{{ param.name }}=</i>{{ param.value }}</p>
-            {% endfor %}
+        {% if hyperparams %}
+            <div class="container">
+                <p><strong>Гиперпараметры:</strong></p>
+                {% for param in hyperparams %}
+                    <p><i>{{ param.name }}=</i>{{ param.value }}</p>
+                {% endfor %}
+            </div>
         {% endif %}
         {% if params %}
-            <p><strong>Параметры:</strong></p>
-            <p><i>Вахта=</i>{{ params.is_vahta }}</p>
-            <p><i>Частичная занятость=</i>{{ params.is_parttime }}</p>
-            <p><i>Уровень опыта=</i>{{ params.experience_id }}</p>
-            <p><i>Регион=</i>{{ params.region_name }}</p>
+            <div class="container">
+                <p><strong>Параметры:</strong></p>
+                <p><i>Вахта=</i>{{ params.is_vahta }}</p>
+                <p><i>Частичная занятость=</i>{{ params.is_parttime }}</p>
+                <p><i>Уровень опыта=</i>{{ params.experience_id }}</p>
+                <p><i>Регион=</i>{{ params.region_name }}</p>
+            </div>
         {% endif %}
-    </div>
         {% if metrics %}
             <div class="container">
                 <p><strong>Метрики модели:</strong></p>
@@ -191,7 +193,7 @@
                 <p><i>Более чем на 25%: </i>{{ metrics.more_25 }}</p>
             </div>
         {% endif %}
-        {% if ip is defined %}
+        {% if ip is defined and ip %}
             <div class="container">
                 <p><strong>Важность признаков</strong></p>
                 <div id="feature-importance"></div>

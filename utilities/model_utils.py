@@ -1,6 +1,4 @@
-import os
 import json
-import pickle
 import base64
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,9 +6,6 @@ from io import BytesIO
 from typing import Optional, List
 from datetime import datetime
 from transliterate import translit
-from catboost import CatBoostRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
 from werkzeug.datastructures import FileStorage
 from sklearn.preprocessing import LabelEncoder
 from sqlalchemy import Integer, Float, String, Boolean, DateTime
@@ -22,12 +17,6 @@ MODELS_PATH = 'ml_models'
 DATASETS_PATH = 'datasets'
 
 
-def load_model(path: str) -> CatBoostRegressor:
-    model = CatBoostRegressor()
-    model.load_model(path)
-    return model
-
-
 def get_importance_plot(importances: List[ModelFeatureImportance]):
     names, values = [], []
     for elem in importances:
@@ -35,8 +24,7 @@ def get_importance_plot(importances: List[ModelFeatureImportance]):
         values.append(elem.value)
 
     plt.style.use('dark_background')
-    bars = plt.barh(names, values)
-    plt.bar_label(bars)
+    plt.barh(names, values)
     plt.title('CatBoost Важность признаков')
     plt.xlabel('Значение важности')
     plt.ylabel('Признак')
@@ -52,21 +40,6 @@ def get_importance_plot(importances: List[ModelFeatureImportance]):
 def get_list_of_professions() -> list[str]:
     with open('datasets/professions_names.json', 'r', encoding='utf-8') as f:
         return list(json.load(f).keys())
-
-
-def get_list_of_models() -> list[str]:
-    with open('datasets/professions_numbers.json', 'r', encoding='utf-8') as f:
-        translate: dict = json.load(f)
-    models = sorted(list(map(lambda x: translate[x], os.listdir(MODELS_PATH))))
-    return models
-
-
-def get_prof_models(number: int) -> list[str]:
-    path = f'{MODELS_PATH}/{number}'
-    models = os.listdir(path)
-    models = list(map(lambda x: f'{path}/{x}', models))
-    models.sort(key=os.path.getctime, reverse=True)
-    return models
 
 
 def get_prof_num(name: str) -> int:
