@@ -165,10 +165,6 @@
                     <input type="number" name="early_stop"
                            value="{{ catboost_params['early_stop'] if catboost_params else 100 }}" required min="1">
                 </label>
-                <label value="Разбиение train/test (процент тестовых данных)">Разбиение train/test:
-                    <input type="number" name="train_test"
-                           value="{{ catboost_params['train_test'] if catboost_params else 0.25 }}" required min="0.01" max="1" step="0.01">
-                </label>
                 <label value="learning rate">Скорость обучения:
                     <input type="number" name="learning_rate"
                            value="{{ catboost_params['learning_rate'] if catboost_params else 0.03 }}" required step="0.01">
@@ -206,7 +202,7 @@
             <p>Загрузить свой датасет (csv)</p>
             <form action="/upload-dataset" method="post" enctype="multipart/form-data">
                 <input type="file" name="file" accept=".csv"/>
-                <input type="submit" value="Проверить корректность данных" class="dont_work">
+                <input type="submit" value="Проверить корректность данных">
                 <input type="hidden" name="model" value="{{ model.id }}">
             </form>
             <h2>Или</h2>

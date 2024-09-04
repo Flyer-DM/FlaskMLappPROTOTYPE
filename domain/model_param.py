@@ -11,5 +11,5 @@ class ModelParam(db.Model):
     is_parttime = db.Column(db.Boolean, nullable=False)
     experience_id = db.Column(db.Integer, nullable=False)
     region_name = db.Column(db.String, nullable=False)
-
+    # прямые ссылки
     model = db.relationship(ModelMeta, foreign_keys=[model_id])

@@ -1,10 +1,8 @@
-import os
-import re
 import atexit
 from itertools import chain
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam, ModelParam
+from domain import db, User, ModelMeta, ModelMethod, ModelHyperparam, ModelParam, ModelMetrics, ModelFeatureImportance
 from utilities.model_utils import *
 from utilities.file_utils import cleanup
 from utilities.train_model import train_model, add_model_hyperparams, get_catboost_hyperparams
@@ -79,26 +77,6 @@ def main():
     :return: загрузка html страницы
     """
     return render_template('main.html', name=current_user.first_name, surname=current_user.last_name)
-
-
-@app.route('/model-description', methods=[POST])
-@login_required
-def model_description():
-    """
-    Страница с описанием версии модели выбранной профессии
-    :return: загрузка html страницы c переданными параметрами
-    """
-    model_ver = request.form.get('model_ver')
-    profession_num = int(re.search(r'(?<=/)\d+(?=/)', model_ver).group()[0])
-    profession = get_prof_name(profession_num)
-    model = load_model(model_ver)
-    kwargs = model_kwargs(model)
-    # График обучения
-    learning_plot = get_learning_plot(model)
-    # График важности признаков
-    importance_plot = get_importance_plot(profession_num, model)
-    return render_template('description.html', name=current_user.first_name, surname=current_user.last_name,
-                           profession=profession, lp=learning_plot, ip=importance_plot, **kwargs)
 
 
 @app.route('/upload-dataset', methods=[POST])
@@ -209,7 +187,6 @@ def model_creation_page(state: int = None):
             add_model_hyperparams(db, model_id,
                                   ('epochs', request.form.get('epochs')),
                                   ('early_stop', request.form.get('early_stop')),
-                                  ('train_test', request.form.get('train_test').replace(',', '.', 1)),
                                   ('learning_rate', request.form.get('learning_rate').replace(',', '.', 1)),
                                   ('depth', request.form.get('depth')))
         model.state = state - 1  # состояние модели = 2
@@ -303,9 +280,10 @@ def set_params_for_model(model_id: int):  # state = 5 (установка пар
         model_params = ModelParam(model_id=model_id, is_vahta=is_vahta, is_parttime=is_parttime,
                                   experience_id=experience_id, region_name=region_name)
         db.session.add(model_params)
+    model.state = 4 if model.state < 4 else model.state
     model.last_changed = user_id
     db.session.commit()
-    return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=model.state + 1)
+    return render_template('new_model.html', name=user_name, surname=user_surname, model=model, state=5)
 
 
 @app.route('/teach_model/<int:model_id>', methods=[GET])
@@ -313,10 +291,24 @@ def set_params_for_model(model_id: int):  # state = 5 (установка пар
 def teach_model(model_id: int):
     """Запуск обучения модели"""
     model: ModelMeta = ModelMeta.query.get(model_id)
+    if model.state >= 5:
+        return render_template('main.html', name=current_user.first_name, surname=current_user.last_name,
+                               train='not')
     model.state = 5
     model.retrained += 1
     model.last_changed = current_user.id
-    model.model_file = train_model(model_id)
+    filename, n, rmse, mape, dev_metrics, feature_importances = train_model(model_id)
+    model.model_file = filename
+    metrics: ModelMetrics = ModelMetrics(model_id=model_id, n=n, rmse=rmse, mape=mape, **dev_metrics)
+    db.session.add(metrics)
+    metrics_id = ModelMetrics.query.filter_by(model_id=model_id).first().id
+    for i, elem in enumerate(feature_importances.items(), 1):
+        name = elem[0]
+        if name == 'ыеар':
+            name = 'Год'
+        importance: ModelFeatureImportance = ModelFeatureImportance(model_metrics_id=metrics_id,
+                                                                    top=i, name=name, value=elem[1])
+        db.session.add(importance)
     db.session.commit()
     return render_template('main.html', name=current_user.first_name, surname=current_user.last_name, train='started')
 
@@ -332,8 +324,14 @@ def incomplete_model(model_id: int = None):
         model = ModelMeta.query.get(model_id)
         hyperparams = ModelHyperparam.query.filter_by(model_id=model_id).all()
         params = ModelParam.query.filter_by(model_id=model_id).first()
+        metrics = ModelMetrics.query.filter_by(model_id=model_id).first()
+        importance_plot = None
+        if metrics:
+            importances = ModelFeatureImportance.query.filter_by(model_metrics_id=metrics.id).all()
+            importance_plot = get_importance_plot(importances)
         return render_template('incomplete_model.html', name=user_name, surname=user_surname, model=model,
-                               get_prof_name=get_prof_name, show_table=False, hyperparams=hyperparams, params=params)
+                               get_prof_name=get_prof_name, show_table=False, hyperparams=hyperparams, params=params,
+                               metrics=metrics, ip=importance_plot)
     return render_template('incomplete_model.html', name=user_name, surname=user_surname, all_models=all_models,
                            get_prof_name=get_prof_name, show_table=True)
 

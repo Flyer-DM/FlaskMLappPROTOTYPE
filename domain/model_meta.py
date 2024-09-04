@@ -34,11 +34,12 @@ class ModelMeta(db.Model):
     orig = db.Column(db.Integer, db.ForeignKey("model_meta.id", ondelete='SET NULL'), nullable=True)  # Оригинал
     train_table = db.Column(db.String, nullable=True)  # имя таблицы для обучения
     model_file = db.Column(db.String, nullable=True)  # имя (путь) до файла модели
-
+    # прямые ссылки
     author_id = db.relationship(User, foreign_keys=[author])
     last_changed_user = db.relationship(User, foreign_keys=[last_changed])
     method_id = db.relationship(ModelMethod)
     # обратные ссылки
-    original_model = db.relationship("ModelMeta", remote_side=[id], backref='children')
+    original_model = db.relationship('ModelMeta', remote_side=[id], backref='children')
     hyperparams = db.relationship('ModelHyperparam', backref='model_meta', cascade='all, delete-orphan')
     params = db.relationship('ModelParam', backref='model_meta', cascade='all, delete-orphan')
+    metrics = db.relationship('ModelMetrics', backref='model_meta', cascade='all, delete-orphan')

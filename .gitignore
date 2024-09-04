@@ -1,5 +1,6 @@
 /venv
 /utilities/__pycache__
+test.py
 email_password.txt
 interface_db.txt
 users.txt

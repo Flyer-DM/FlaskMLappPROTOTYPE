@@ -18,7 +18,9 @@
 </form>
 <div class="d-flex flex-column align-items-center">
     {% if train == 'started' %}
-        <p>Запущен процесс обучения модели</p>
+        <p>Модель обучена</p>
+    {% elif train == 'not' %}
+        <p>Модель уже обучена</p>
     {% endif %}
     <form action="/new_model_page" method="get">
         <input type="submit" class="button-1" value="Создать новую модель">
@@ -27,25 +29,25 @@
         <input type="submit" class="button-1" value="Открыть сохранённую незавершённую модель">
     </form>
     <form action="/loading" method="get">
-        <input type="submit" class="button-1" value="Переобучение финализированной модели">
+        <input type="submit" class="button-1 dont_work" value="Переобучение финализированной модели">
     </form>
     <form action="/test_new_model" method="get">
-        <input type="submit" class="button-1" value="Тестирование модели на новых данных">
+        <input type="submit" class="button-1 dont_work" value="Тестирование модели на новых данных">
     </form>
     <form action="/copy_unfinished_model" method="get">
         <input type="submit" class="button-1" value="Скопировать сохранённую незавершённую модель">
     </form>
     <form action="/model_for_use" method="get">
-        <input type="submit" class="button-1" value="Назначение модели для использования в калькуляторе">
+        <input type="submit" class="button-1 dont_work" value="Назначение модели для использования в калькуляторе">
     </form>
     <form action="/compare-fin-models" method="get">
-        <input type="submit" class="button-1" value="Сравнить финализированные модели">
+        <input type="submit" class="button-1 dont_work" value="Сравнить финализированные модели">
     </form>
     <form action="/check-queue" method="get">
-        <input type="submit" class="button-1" value="Посмотреть очередь обучения">
+        <input type="submit" class="button-1 dont_work" value="Посмотреть очередь обучения">
     </form>
     <form action="/archive" method="get">
-        <input type="submit" class="button-1" value="Архивация/разархивация слепков данных и моделей">
+        <input type="submit" class="button-1 dont_work" value="Архивация/разархивация слепков данных и моделей">
     </form>
 </div>
 </body>

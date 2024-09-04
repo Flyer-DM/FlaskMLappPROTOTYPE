@@ -1,43 +1,54 @@
-# import threading
+import numpy as np
 from typing import Union
 from utilities.model_utils import *
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from datetime import datetime
 from flask_sqlalchemy.extension import SQLAlchemy
 from sqlalchemy import create_engine, text
 from domain import ModelMeta, ModelMethod, ModelHyperparam, ModelParam
 
 
 def train_catboost(data: pd.DataFrame, profession_num: int,
-                   epochs: int, early_stop: int, train_test: float, learning_rate: float, depth: int) -> str:
+                   epochs: int, early_stop: int, learning_rate: float, depth: int) -> \
+                  (str, int, float, str, dict, dict):
+    """Обучения модели CatBoostRegressor на переданном датасете (преобразование под модель) с входными
+    гиперпараметрами (специфичными под модель); сбор и сохранение всех метрик модели; сохранение модели в виде
+    файла с расширением cbm по пути в зависимости от номера типовой позиции.
+    :return путь до файла модели, количество записей для обучения, rmse, mape, метрики отклонения, топ 10 признаков
+    """
     target = 'new_salary'
-
+    # удаление неиспользуемых в обучении столбцов и дубликатов
     data = data.drop(columns=['id', 'salary_from_rub', 'source_site'], errors='ignore')
-
+    data = data.drop_duplicates()
+    # подготовка категориальных признаков. TODO проверить, что есть НЕ категориальные признаки
     categorical_columns = []
     for col in data.columns[data.dtypes == object]:
-        data[col] = LabelEncoder().fit_transform(data[col].values)
         categorical_columns.append(col)
     features = [col for col in data.columns if col not in [target]]
     cat_idxs = [i for i, f in enumerate(features) if f in categorical_columns]
-
+    # инициализация модели с переданными гиперпараметрами модели и метапараметрами
     model = CatBoostRegressor(allow_writing_files=False, iterations=epochs, loss_function='RMSE', depth=depth,
-                              early_stopping_rounds=early_stop, learning_rate=learning_rate)
-
+                              early_stopping_rounds=early_stop, learning_rate=learning_rate, thread_count=-1,
+                              eval_metric='MAPE')
+    # отбор данных для обучения
     x = data.drop(columns=['new_salary'])
     y = data['new_salary']
-    x_train, x_valid, y_train, y_valid = train_test_split(x, y, test_size=train_test,
-                                                          random_state=42)
+    # запуск обучения модели
     model.fit(
-        x_train,
-        y_train,
+        x,
+        y,
         cat_features=cat_idxs,
-        eval_set=(x_valid, y_valid),
         verbose=False,
         plot=False
     )
-
+    # сбор метрик модели
+    n = data.shape[0]
+    rmse = model.get_best_score()['learn']['RMSE']
+    mape = f"{model.get_best_score()['learn']['MAPE'] * 100:.2f}%"
+    dev_metrics = deviation_metric(y, model.predict(x))
+    # топ 10 важнейших признаков
+    x.columns = [translit(col, 'ru') for col in x.columns]
+    importances = model.get_feature_importance(type='PredictionValuesChange')
+    feature_importances = pd.Series(importances, index=x.columns).sort_values(ascending=False)[:10].to_dict()
+    # сохранение файла модели по дате/времени обучения в директорию с номером ТП
     date_version = datetime.now().strftime('%Y%m%d%H%M%S')
     path = f'{MODELS_PATH}/{profession_num}'
     if os.path.exists(path):
@@ -45,10 +56,11 @@ def train_catboost(data: pd.DataFrame, profession_num: int,
     else:
         os.mkdir(path)
         model.save_model(filename := f'{path}/{profession_num}_v{date_version}.cbm', format='cbm')
-    return filename
+    return 'filename', n, rmse, mape, dev_metrics, feature_importances
 
 
-def train_model(model_id: int) -> str:
+def train_model(model_id: int) -> (str, int, float, str, dict, dict):
+    """Запуск обучения модели по номеру id модели с отбором данных через WHERE"""
     engine = create_engine(open('./interface_db.txt', 'r').read())
     model: ModelMeta = ModelMeta.query.get(model_id)
     param: ModelParam = ModelParam.query.filter_by(model_id=model_id).first()
@@ -63,15 +75,9 @@ def train_model(model_id: int) -> str:
             df, model.profession,
             int(ModelHyperparam.query.filter_by(model_id=model_id, name='epochs').first().value),
             int(ModelHyperparam.query.filter_by(model_id=model_id, name='early_stop').first().value),
-            float(ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value),
             float(ModelHyperparam.query.filter_by(model_id=model_id, name='learning_rate').first().value),
             int(ModelHyperparam.query.filter_by(model_id=model_id, name='depth').first().value)
         )
-
-
-# def train_model_assync(model_id: int):
-#     thread = threading.Thread(target=train_model, args=(model_id, ))
-#     thread.start()
 
 
 def add_model_hyperparams(db: SQLAlchemy, model_id: str, *params) -> None:
@@ -85,13 +91,32 @@ def add_model_hyperparams(db: SQLAlchemy, model_id: str, *params) -> None:
 def get_catboost_hyperparams(model_id: Union[int, str]) -> dict:
     epochs = ModelHyperparam.query.filter_by(model_id=model_id, name='epochs').first().value
     early_stop = ModelHyperparam.query.filter_by(model_id=model_id, name='early_stop').first().value
-    train_test = ModelHyperparam.query.filter_by(model_id=model_id, name='train_test').first().value
     learning_rate = ModelHyperparam.query.filter_by(model_id=model_id, name='learning_rate').first().value
     depth = ModelHyperparam.query.filter_by(model_id=model_id, name='depth').first().value
     return {
         'epochs': epochs,
         'early_stop': early_stop,
-        'train_test': train_test,
         'learning_rate': learning_rate,
         'depth': depth,
     }
+
+
+def deviation_metric(true_values: pd.Series, pred_values: np.ndarray):
+    """Получение метрик: сколько процентов предсказанных значений от всех имеющихся отклоняются более/не более чем
+    на n процентов от истинного значения.
+    :arg true_values - истинные значения.
+    :arg pred_values - предсказанные моделью значения.
+    """
+    metric_x = {}  # процент отклонений от реального значения МЕНЕЕ чем на [1, 3, 5, 10, 15, 20, 25] включительно
+    metric_y = {}  # процент отклонений от реального значения БОЛЕЕ чем на (200, 150, 100, 75, 50, 25) не включительно
+
+    true_values = np.array(true_values)
+    deviation = abs(true_values - pred_values) / true_values * 100  # проценты отклонений всех значений
+
+    for percent in (1, 3, 5, 10, 15, 20, 25):
+        dev = deviation <= percent
+        metric_x[f'less_{percent}'] = f'{sum(dev) / len(dev) * 100:.2f}%'
+    for percent in [200, 150, 100, 75, 50, 25]:
+        dev = deviation > percent
+        metric_y[f'more_{percent}'] = f'{sum(dev) / len(dev) * 100:.2f}%'
+    return {**metric_x, **metric_y}

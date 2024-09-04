@@ -167,6 +167,37 @@
             <p><i>Регион=</i>{{ params.region_name }}</p>
         {% endif %}
     </div>
+        {% if metrics %}
+            <div class="container">
+                <p><strong>Метрики модели:</strong></p>
+                <p><i>Записей для обучения=</i>{{ metrics.n }}</p>
+                <p><i>Cреднеквадратическая ошибка (rmse)=</i>{{ metrics.rmse }}</p>
+                <p><i>Среднее абсолютное процентное отклонение (mape)=</i>{{ metrics.mape }}</p>
+                <br>
+                <p>Cколько процентов предсказанных значений от всех имеющихся отклоняются более/не более чем на n
+                    процентов от истинного значения:</p>
+                <p><i>Менее чем на 1%: </i>{{ metrics.less_1 }}</p>
+                <p><i>Менее чем на 3%: </i>{{ metrics.less_3 }}</p>
+                <p><i>Менее чем на 5%: </i>{{ metrics.less_5 }}</p>
+                <p><i>Менее чем на 10%: </i>{{ metrics.less_10 }}</p>
+                <p><i>Менее чем на 15%: </i>{{ metrics.less_15 }}</p>
+                <p><i>Менее чем на 20%: </i>{{ metrics.less_20 }}</p>
+                <p><i>Менее чем на 25%: </i>{{ metrics.less_25 }}</p>
+                <p><i>Более чем на 200%: </i>{{ metrics.more_200 }}</p>
+                <p><i>Более чем на 150%: </i>{{ metrics.more_150 }}</p>
+                <p><i>Более чем на 100%: </i>{{ metrics.more_100 }}</p>
+                <p><i>Более чем на 75%: </i>{{ metrics.more_75 }}</p>
+                <p><i>Более чем на 50%: </i>{{ metrics.more_50 }}</p>
+                <p><i>Более чем на 25%: </i>{{ metrics.more_25 }}</p>
+            </div>
+        {% endif %}
+        {% if ip is defined %}
+            <div class="container">
+                <p><strong>Важность признаков</strong></p>
+                <div id="feature-importance"></div>
+                <img src="data:image/png;base64, {{ ip }}" alt="Важность признаков">
+            </div>
+        {% endif %}
     {% endif %}
 </div>  
 </body>
