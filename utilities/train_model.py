@@ -25,6 +25,8 @@ def train_catboost(data: pd.DataFrame, profession_num: int,
     data = data.drop(columns=['id', 'salary_from_rub', 'source_site'], errors='ignore')
     data = data.drop_duplicates()
     # все признаки являются категориальными
+    floats = data.select_dtypes(include=['float']).columns
+    data[floats] = data[floats].astype(int)
     features = [col for col in data.columns if col != target]
     cat_idxs = [i for i, f in enumerate(features)]
     # инициализация модели с переданными гиперпараметрами модели и метапараметрами

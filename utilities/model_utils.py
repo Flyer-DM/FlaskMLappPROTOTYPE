@@ -25,7 +25,7 @@ def get_importance_plot(importances: List[ModelFeatureImportance]):
 
     plt.style.use('dark_background')
     plt.barh(names, values)
-    plt.title('CatBoost Важность признаков')
+    plt.title('Важность признаков')
     plt.xlabel('Значение важности')
     plt.ylabel('Признак')
     plt.grid(False)

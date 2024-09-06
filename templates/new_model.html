@@ -16,7 +16,18 @@
         <p>{{ surname }}</p>
     </div>
 </form>
-<div class="d-flex flex-column align-items-center">
+{% if state is undefined %}
+    <div id="model-teach-descr">
+        <p><strong>Этапы обучения:</strong></p>
+        <p>1)создание записи о модели в БД</p>
+        <p>2)выбор метода моделирования</p>
+        <p>3)выбор гиперпараметров метода</p>
+        <p>4)выбор слепка данных</p>
+        <p>5)настройка параметров (фильтром) модели</p>
+        <p>6)запуск процесса обучения</p>
+    </div>
+{% endif %}
+<div class="d-flex flex-column align-items-center {{ 'central-container' if state is undefined else '' }}">
     <h1>Создание модели</h1>
     {% if state is undefined %}
         {% if saved is defined and saved == 1 %}
